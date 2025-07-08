@@ -1,0 +1,581 @@
+---
+title: "GFBI_Tree_Level_TPL"
+author: "Pauline Depoortere"
+date: "17/02/2020"
+output: pdf_document
+---
+
+#Jeux de données 
+
+##1. Importation des données 
+
+
+```{r}
+rm(list=ls()) 
+#Set working directory
+setwd("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Final_Nature/Code/1_Cleanage/")
+#Load required package
+library(data.table)
+library(BIOMASS)
+library(httr2)
+library(sf)
+library(ggplot2)
+#Load the tree-level dataset
+trees<-fread("demo.csv")
+head(trees)
+#Fix special characters in plot names
+trees$PLT <- iconv(trees$PLT, from = "ISO-8859-1", to = "UTF-8")
+#Load the plot-level dataset
+plot<-fread("plot.csv")
+head(plot)
+#Fix special characters in plot names
+plot$PLT <- iconv(plot$PLT, from = "ISO-8859-1", to = "UTF-8")
+```
+
+##1a. Exploration du jeux de données
+
+```{r}
+trees[!is.na(LAT),.(LAT.min=min(LAT),  LON.min=min(LON), LAT.max=max(LAT), LON.max=max(LON)),]
+```
+
+
+##2. Creation of two columns "PLT_trois" and "PLT_deux" and removal of rows with no data
+
+In the column PLT_deux (= DSN_PLT), the DSN identifier was added to the plot name (from the "PLT" column) to distinguish plots that share the same name but belong to different parent datasets, as indicated in the "DSN" column.
+
+In total, there are 18,404 unique plots in the database. However, 20,137 forest inventories were conducted. This is because some plots were inventoried at multiple time points. To distinguish these repeated censuses, the census year was appended to the plot name, creating a new column called PLT_trois (= "DSN_PLT_Year").
+
+
+
+```{r}
+
+#Create the columns PLT_trois and PLT_deux 
+trees[, PLT_trois := paste(DSN,PLT,Year, sep='_')] 
+trees[, PLT_deux := paste(DSN,PLT, sep='_')] 
+summary(trees)
+
+##Remove trees/rows with missing data 
+trees_pantrop<-trees[!is.na(FID), ]
+
+## Number of inventories and plots
+trees_pantrop[,uniqueN(PLT_trois),]#20 137 inventories
+trees_pantrop[,uniqueN(PLT_deux),]#18 404 plots
+```
+
+
+=> 20 137 inventories et 18 404 plots
+
+
+##3. Correction of plot names (PLT_trois)
+
+Correction of plot names in the "plot" table for cases where the name does not appear in the same format "DSN_PLT_Year" between the "plot" and "trees" tables (in order to merge information from the "plot" table with the "trees" table).
+
+```{r}
+
+#Correction of 18 out of 122 unmergeable plots; I corrected everything I could
+
+plot[PLT=="Benito_1987",PLT:="108_Benito_1987"]
+plot[PLT=="Bosquede_1991",PLT:="108_Bosquede_1991"]
+plot[PLT=="Chamela1_1985",PLT:="108_Chamela1_1985"]
+plot[PLT=="Chamela2_1985",PLT:="108_Chamela2_1985"]
+plot[PLT=="Chamela3_1985",PLT:="108_Chamela3_1985"]
+plot[PLT=="Chamela4_1985",PLT:="108_Chamela4_1985"]
+plot[PLT=="Lasjoyas_1991",PLT:="108_Lasjoyas_1991"]
+plot[PLT=="Luquillo_1989",PLT:="108_Luquillo_1989"]
+plot[PLT=="Mogote_1989",PLT:="108_Mogote_1989"]
+plot[PLT=="Motozint_1987",PLT:="108_Motozint_1987"]
+plot[PLT=="Quinceoc_1991",PLT:="108_Quinceoc_1991"]
+plot[PLT=="Tuxtlas_1981",PLT:="108_Tuxtlas_1981"]# 12 more that will now match ;)
+
+plot[PLT=="98_Newcaldo_1981",PLT:="79_Newcaldo_1981"]
+plot[PLT=="98_Baitete_1989",PLT:="79_Baitete_1989"]
+plot[PLT=="98_Davies_1981",PLT:="79_Davies_1981"]
+plot[PLT=="98_Varirata_1989",PLT:="79_Varirata_1989"]
+
+#Fixing special characters
+
+trees_pantrop[PLT_trois%like%"51_BRAZIL_ALF-01ß_2008",PLT_trois:="51_BRAZIL_ALF-01_2008"]
+trees_pantrop[PLT_deux%like%"51_BRAZIL_ALF-01ß",PLT_deux:="51_BRAZIL_ALF-01"]
+trees_pantrop[PLT%like%"BRAZIL_ALF-01ß",PLT:="BRAZIL_ALF-01"]
+plot[PLT%like%"51_BRAZIL_ALF-01¯_2008",PLT:="51_BRAZIL_ALF-01_2008"]
+
+trees_pantrop[PLT_trois%like%"51_PERU_ALM-01ß_2008",PLT_trois:="51_PERU_ALM-01_2008"]
+trees_pantrop[PLT_deux%like%"51_PERU_ALM-01ß",PLT_deux:="51_PERU_ALM-01"]
+trees_pantrop[PLT%like%"PERU_ALM-01ß",PLT:="PERU_ALM-01"]
+plot[PLT%like%"51_PERU_ALM-01¯_2008",PLT:="51_PERU_ALM-01_2008"]
+
+```
+
+"It would be interesting to correct these plots in the future!
+
+The number of plots and inventories remains the same."
+
+##4. Merging the data from the 'trees_pantrop' table with the variables Ps, Continent, LAT, and LON from the 'plot' table
+
+```{r}
+
+dim(trees_pantrop)
+dim(plot)
+
+trees_pantrop2<-merge(trees_pantrop,plot[,.(PLT,Ps,Continent,LAT,LON)], by.x="PLT_trois", by.y="PLT", all.x=TRUE)
+
+dim(trees_pantrop2)
+head(trees_pantrop2)
+summary(trees_pantrop2)
+
+#How many did not match?
+miss<-as.data.table(trees_pantrop2[is.na(Ps)])
+miss[,uniqueN(PLT_trois),]# 9715 that did not match...
+
+trees_pantrop2[,uniqueN(PLT_trois),]#20 137
+trees_pantrop2[,uniqueN(PLT_deux),]# 18 404
+
+```
+
+There are 9,715 out of 20,137 inventories (almost half!!!) without Ps, LAT.y, LON.y, and Continent because the plot names are not present in the plot table. The number of inventories and plots remains unchanged.
+
+##5. Correction of "BL" plots from the African continent
+
+```{r}
+##Duplicate the columns to be modified in order to keep a record of the original ones in the table
+
+trees_pantrop2[,PLT_bis:=PLT]
+trees_pantrop2[,PLT_deux_bis:=PLT_deux]
+trees_pantrop2[,PLT_trois_bis:=PLT_trois]
+trees_pantrop2[,Ps_bis:=Ps]
+trees_pantrop2[,TPH_bis:=TPH]
+trees_pantrop2[,LAT_ybis:=LAT.y]
+trees_pantrop2[,LON_ybis:=LON.y]
+trees_pantrop2[,LAT_xbis:=LAT.x]
+trees_pantrop2[,LON_xbis:=LON.x]
+
+##Correction of the new columns for the relevant plots for the following columns: PLT, PLT_deux, PLT_trois, TPH, Ps, LAT, and LON
+
+trees_pantrop2[PLT%like%"BL",.(.N),by="PLT_trois_bis"]# 36 plots are affected, so in the "bis" columns I will only have 36/4 = 9 plots
+
+trees_pantrop2[PLT=="BL2PL2NE",PLT_trois_bis:="76_BL2PL2_2016",]
+trees_pantrop2[PLT=="BL2PL2NW",PLT_trois_bis:="76_BL2PL2_2016",]
+trees_pantrop2[PLT=="BL2PL2SE",PLT_trois_bis:="76_BL2PL2_2016",]
+trees_pantrop2[PLT=="BL2PL2SW",PLT_trois_bis:="76_BL2PL2_2016",]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL2_2016",LAT_ybis:=mean(LAT.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL2_2016",LON_ybis:=mean(LON.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL2_2016",LAT_xbis:=mean(LAT.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL2_2016",LON_xbis:=mean(LON.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL2_2016",Ps_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL2_2016",TPH_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL2_2016",PLT_deux_bis:="76_BL2PL2",]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL2_2016",PLT_bis:="BL2PL2",]
+
+trees_pantrop2[PLT=="BL2PL3NE",PLT_trois_bis:="76_BL2PL3_2016",]
+trees_pantrop2[PLT=="BL2PL3NW",PLT_trois_bis:="76_BL2PL3_2016",]
+trees_pantrop2[PLT=="BL2PL3SE",PLT_trois_bis:="76_BL2PL3_2016",]
+trees_pantrop2[PLT=="BL2PL3SW",PLT_trois_bis:="76_BL2PL3_2016",]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL3_2016",LAT_ybis:=mean(LAT.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL3_2016",LON_ybis:=mean(LON.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL3_2016",LAT_xbis:=mean(LAT.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL3_2016",LON_xbis:=mean(LON.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL3_2016",Ps_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL3_2016",TPH_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL3_2016",PLT_deux_bis:="76_BL2PL3",]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL3_2016",PLT_bis:="BL2PL3",]
+
+trees_pantrop2[PLT=="BL2PL4NE",PLT_trois_bis:="76_BL2PL4_2016",]
+trees_pantrop2[PLT=="BL2PL4NW",PLT_trois_bis:="76_BL2PL4_2016",]
+trees_pantrop2[PLT=="BL2PL4SE",PLT_trois_bis:="76_BL2PL4_2016",]
+trees_pantrop2[PLT=="BL2PL4SW",PLT_trois_bis:="76_BL2PL4_2016",]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL4_2016",LAT_ybis:=mean(LAT.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL4_2016",LON_ybis:=mean(LON.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL4_2016",LAT_xbis:=mean(LAT.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL4_2016",LON_xbis:=mean(LON.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL4_2016",Ps_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL4_2016",TPH_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL4_2016",PLT_deux_bis:="76_BL2PL4",]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL4_2016",PLT_bis:="BL2PL4",]
+
+trees_pantrop2[PLT=="BL2PL5NE",PLT_trois_bis:="76_BL2PL5_2016",]
+trees_pantrop2[PLT=="BL2PL5NW",PLT_trois_bis:="76_BL2PL5_2016",]
+trees_pantrop2[PLT=="BL2PL5SE",PLT_trois_bis:="76_BL2PL5_2016",]
+trees_pantrop2[PLT=="BL2PL5SW",PLT_trois_bis:="76_BL2PL5_2016",]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL5_2016",LAT_ybis:=mean(LAT.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL5_2016",LON_ybis:=mean(LON.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL5_2016",LAT_xbis:=mean(LAT.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL5_2016",LON_xbis:=mean(LON.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL5_2016",Ps_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL5_2016",TPH_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL5_2016",PLT_deux_bis:="76_BL2PL5",]
+trees_pantrop2[PLT_trois_bis=="76_BL2PL5_2016",PLT_bis:="BL2PL5",]
+
+trees_pantrop2[PLT=="BL3PL1NE",PLT_trois_bis:="76_BL3PL1_2016",]
+trees_pantrop2[PLT=="BL3PL1NW",PLT_trois_bis:="76_BL3PL1_2016",]
+trees_pantrop2[PLT=="BL3PL1SE",PLT_trois_bis:="76_BL3PL1_2016",]
+trees_pantrop2[PLT=="BL3PL1SW",PLT_trois_bis:="76_BL3PL1_2016",]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL1_2016",LAT_ybis:=mean(LAT.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL1_2016",LON_ybis:=mean(LON.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL1_2016",LAT_xbis:=mean(LAT.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL1_2016",LON_xbis:=mean(LON.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL1_2016",Ps_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL1_2016",TPH_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL1_2016",PLT_deux_bis:="76_BL3PL1",]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL1_2016",PLT_bis:="BL3PL1",]
+
+trees_pantrop2[PLT=="BL3PL2NE",PLT_trois_bis:="76_BL3PL2_2016",]
+trees_pantrop2[PLT=="BL3PL2NW",PLT_trois_bis:="76_BL3PL2_2016",]
+trees_pantrop2[PLT=="BL3PL2SE",PLT_trois_bis:="76_BL3PL2_2016",]
+trees_pantrop2[PLT=="BL3PL2SW",PLT_trois_bis:="76_BL3PL2_2016",]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL2_2016",LAT_ybis:=mean(LAT.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL2_2016",LON_ybis:=mean(LON.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL2_2016",LAT_xbis:=mean(LAT.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL2_2016",LON_xbis:=mean(LON.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL2_2016",Ps_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL2_2016",TPH_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL2_2016",PLT_deux_bis:="76_BL3PL2",]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL2_2016",PLT_bis:="BL3PL2",]
+
+trees_pantrop2[PLT=="BL3PL3NE",PLT_trois_bis:="76_BL3PL3_2016",]
+trees_pantrop2[PLT=="BL3PL3NW",PLT_trois_bis:="76_BL3PL3_2016",]
+trees_pantrop2[PLT=="BL3PL3SE",PLT_trois_bis:="76_BL3PL3_2016",]
+trees_pantrop2[PLT=="BL3PL3SW",PLT_trois_bis:="76_BL3PL3_2016",]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL3_2016",LAT_ybis:=mean(LAT.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL3_2016",LON_ybis:=mean(LON.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL3_2016",LAT_xbis:=mean(LAT.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL3_2016",LON_xbis:=mean(LON.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL3_2016",Ps_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL3_2016",TPH_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL3_2016",PLT_deux_bis:="76_BL3PL3",]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL3_2016",PLT_bis:="BL3PL3",]
+
+trees_pantrop2[PLT=="BL3PL4NE",PLT_trois_bis:="76_BL3PL4_2016",]
+trees_pantrop2[PLT=="BL3PL4NW",PLT_trois_bis:="76_BL3PL4_2016",]
+trees_pantrop2[PLT=="BL3PL4SE",PLT_trois_bis:="76_BL3PL4_2016",]
+trees_pantrop2[PLT=="BL3PL4SW",PLT_trois_bis:="76_BL3PL4_2016",]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL4_2016",LAT_ybis:=mean(LAT.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL4_2016",LON_ybis:=mean(LON.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL4_2016",LAT_xbis:=mean(LAT.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL4_2016",LON_xbis:=mean(LON.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL4_2016",Ps_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL4_2016",TPH_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL4_2016",PLT_deux_bis:="76_BL3PL4",]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL4_2016",PLT_bis:="BL3PL4",]
+
+trees_pantrop2[PLT=="BL3PL5ASE",PLT_trois_bis:="76_BL3PL5_2016",]
+trees_pantrop2[PLT=="BL3PL5BNE",PLT_trois_bis:="76_BL3PL5_2016",]
+trees_pantrop2[PLT=="BL3PL5CSW",PLT_trois_bis:="76_BL3PL5_2016",]
+trees_pantrop2[PLT=="BL3PL5DNW",PLT_trois_bis:="76_BL3PL5_2016",]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL5_2016",LAT_ybis:=mean(LAT.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL5_2016",LON_ybis:=mean(LON.y)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL5_2016",LAT_xbis:=mean(LAT.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL5_2016",LON_xbis:=mean(LON.x)]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL5_2016",Ps_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL5_2016",TPH_bis:=1]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL5_2016",PLT_deux_bis:="76_BL3PL5",]
+trees_pantrop2[PLT_trois_bis=="76_BL3PL5_2016",PLT_bis:="BL3PL5",]
+
+
+trees_pantrop2[,.(PLT_trois_bis=uniqueN(PLT_trois_bis)),]#20 110
+trees_pantrop2[,.(PLT_deux_bis=uniqueN(PLT_deux_bis)),]#18 377
+##################################################################################################################################################################################################################################
+```
+
+There are now 20,110 PLT_trois/inventories and 18,377 PLT_deux/plots (-27 plots)
+
+## 6. Plot size: multiple TPH values and missing TPH
+
+I remove the plots that have more than one TPH value (excluding NAs for now).
+
+Case of NAs: actually, there is only one plot where I have DBH but no TPH, and I have no TPH at all for it, so I remove it. The others will be removed later during the DBH = NA step — I’ve checked ;)  
++ Three more plots to remove that slipped through because they had a missing TPH, but also two different TPH values, so three TPHs total. They were in the list of missing TPHs, but I need to remove them because they have multiple TPHs. So by the end of step 7, all missing/NA TPH issues are handled.
+
+For the ones with only one TPH, is Ps_test = 1/TPH_bis equal to the Ps value from the plot table (where I have a match)? I’ll check that.
+
+```{r}
+list_na<-trees_pantrop2[is.na(TPH_bis),.(unique(PLT_trois_bis))]#125
+
+essais<-trees_pantrop2[ ! trees_pantrop2$PLT_trois_bis %in% list_na$V1]#Pour travailler hors NAS
+essais[,uniqueN(PLT_trois_bis),]#19 985
+summary(essais)#pas de NAs dans les TPHs
+
+essais2<-essais[,.(nb_TPH=uniqueN(TPH_bis)),by="PLT_trois_bis"][nb_TPH>1]#5 215 plots quand même
+essais22<-essais[essais$PLT_trois_bis %in% essais2$PLT_trois_bis]#je selctionne que les parcelles où plus d'un TPH
+essais22[,.(uniqueN(Year)),by="PLT_deux_bis"][V1>1]
+uniqueN(essais22$PLT_trois_bis)#5215
+
+
+# Suppresion des parcelles avec plus d'un TPH
+trees_pantrop22<-trees_pantrop2[!trees_pantrop2$PLT_trois_bis %in% essais2$PLT_trois_bis]
+trees_pantrop22[,uniqueN(PLT_trois_bis),]#14 895
+trees_pantrop22[,uniqueN(PLT_deux_bis),]#13 166
+
+# Cas des Nas dans les TPHs
+
+trees_pantrop22<-trees_pantrop22[!PLT_trois_bis=="712_712_ORGP30_2018"]
+trees_pantrop22[,uniqueN(PLT_trois_bis),]#14 894
+trees_pantrop22<-trees_pantrop22[!PLT_trois_bis=="97_167246271010854_2009"]
+trees_pantrop22<-trees_pantrop22[!PLT_trois_bis=="111_111_FM_346089603489998_2016"]
+trees_pantrop22<-trees_pantrop22[!PLT_trois_bis=="111_111_FM_346089438489998_2016"]
+trees_pantrop22[,uniqueN(PLT_trois_bis),]#14 891
+trees_pantrop22[,uniqueN(PLT_deux_bis),]#13 162
+```
+
+
+## 7. Remove trees with DBH < 10 cm
+
+I removed stems with a diameter less than 10 cm.  
+And I made sure not to remove rows with NA values.
+
+```{r}
+trees_pantrop3<-trees_pantrop22[DBH>=10,]
+trees_pantrop4<-trees_pantrop22[is.na(DBH),]
+trees_pantrop5<-rbind(trees_pantrop3,trees_pantrop4)
+uniqueN(trees_pantrop5, by="PLT_trois_bis")#14 099
+uniqueN(trees_pantrop5, by="PLT_deux_bis")#12 370
+```
+
+
+## 8. Plots where DBH = NA
+
+I remove plots where the number of trees with DBH = NA exceeds 5% of the total number of trees in the plot. 
+
+```{r}
+trees_pantrop5[, n_trees_per_plots := .N, by = PLT_trois_bis] # counts NA values too (since it counts rows) = number of trees per plot per year
+trees_pantrop5[, n_trees_DBH_NA := sum(is.na(DBH)) , by = PLT_trois_bis] # number of missing DBH values per plot per year
+trees_pantrop5[, pourcentage := (n_trees_DBH_NA/n_trees_per_plots)*100 , by = PLT_trois_bis]# calculate the percentage of trees with missing DBH compared to the total number of trees in the plot
+#trees_pantrop2[, pourcentage2 := (n_trees_DBH_NA/n_trees_per_plots)*100 ] 
+
+trees_pantrop5[n_trees_DBH_NA>0, .(n_trees_per_plots=unique(n_trees_per_plots),n_trees_DBH_NA=unique(n_trees_DBH_NA),pourcentage=unique(pourcentage),TPH_bis=uniqueN(TPH_bis), TPH_biss=unique(TPH_bis),Ps_bis=unique(Ps_bis)), by = PLT_trois_bis] [,uniqueN(PLT_trois_bis),]
+
+missing_dbh<-trees_pantrop5[n_trees_DBH_NA>0, .(n_trees_per_plots=unique(n_trees_per_plots),n_trees_DBH_NA=unique(n_trees_DBH_NA),pourcentage=unique(pourcentage),TPH_bis=uniqueN(TPH_bis), TPH_biss=unique(TPH_bis),Ps_bis=unique(Ps_bis)), by = PLT_trois_bis][pourcentage>=5]
+
+missing_dbh[,uniqueN(PLT_trois_bis),]#1049
+
+# 1049 plots have missing DBH values exceeding 5%, so I remove those plots
+trees_pantrop6<-trees_pantrop5[!trees_pantrop5$PLT_trois_bis %in% missing_dbh$PLT_trois_bis]
+
+# But I still need to remove trees with DBH = NA for the remaining plots
+trees_pantrop7<-trees_pantrop6[!is.na(DBH),] 
+
+#Visualization #####################################################################################
+
+uniqueN(trees_pantrop7, by="PLT_trois_bis")#13 050
+uniqueN(trees_pantrop7, by="PLT_deux_bis")#11 405
+
+trees_pantrop7[is.na(DBH)]#no NA
+trees_pantrop7[is.na(TPH_bis)]#no NA
+summary(trees_pantrop7)
+trees_pantrop7[,.(nb_TPH=uniqueN(TPH_bis),unique(TPH_bis)),by="PLT_trois_bis"][nb_TPH>1]
+```
+
+There are now 13,050 inventories (PLT_trois_bis) and 11,405 plots with their trees and DBH values (most NAs removed).
+
+## 9. Plot size: I remove plots that are too small
+
+
+```{r}
+trees_pantrop7[,Ps_test:=1/TPH_bis]
+
+small<-trees_pantrop7[ ,unique(Ps_test),by="PLT_trois_bis"][V1<0.25]#8052
+big<-trees_pantrop7[ ,unique(Ps_test),by="PLT_trois_bis"][V1>=0.25]#4 998
+
+trees_pantrop77<-trees_pantrop7[!trees_pantrop7$PLT_trois_bis %in% small$PLT_trois_bis]
+
+uniqueN(trees_pantrop77$PLT_trois_bis)#4998
+uniqueN(trees_pantrop77$PLT_deux_bis)#3379
+
+# Check if Ps_test equals Ps
+
+res=trees_pantrop77[,.(res=Ps_test-Ps_bis),][!is.na(res),max(res)]# max : 0.0000001
+res
+```
+
+
+##10. Remove plots where less than 90% of trees are identified to at least the genus level
+
+So I need to calculate how many trees have genus = "Indet." out of the total number of trees per plot, and keep only plots where at least 90% of the trees have a genus identified.
+
+```{r}
+trees_pantrop[,  c("genus.x","species.x"):=tstrsplit(SPCD," ", keep=c(1,2))]
+trees_pantrop2[,  c("genus.x","species.x"):=tstrsplit(SPCD," ", keep=c(1,2))]
+trees_pantrop77[,  c("genus.x","species.x"):=tstrsplit(SPCD," ", keep=c(1,2))]#split SPCD into two new columns: genus.x and species.x
+
+trees_pantrop[is.na(species.x),]# 2 NAs 
+trees_pantrop[is.na(genus.x),]
+
+trees_pantrop77[is.na(species.x),]# 0 Nas 
+trees_pantrop77[is.na(genus.x),]
+trees_pantrop77[genus.x=="Indet.",]#0
+
+Indet_genus<-trees_pantrop77[,.(nb_genus_missing=sum(genus.x=="Indet."), nb_trees=.N),by=PLT_trois_bis][,.(PLT_trois_bis,nb_genus_missing,nb_trees,pourcentage=((nb_trees-nb_genus_missing)/nb_trees)*100),][pourcentage<90]#0 plots have less than 90% of trees identified at genus leve
+
+trees_pantrop8<-trees_pantrop77[!(trees_pantrop77$PLT_trois_bis %in% Indet_genus$PLT_trois_bis)]
+
+trees_pantrop8[,uniqueN(PLT_deux_bis),]#still 4998
+
+Unknown_genus<-trees_pantrop77[,.(nb_genus_missing=sum(genus.x=="unknown"), nb_trees=.N),by=PLT_trois_bis][,.(PLT_trois_bis,nb_genus_missing,nb_trees,pourcentage=((nb_trees-nb_genus_missing)/nb_trees)*100),][pourcentage<90]#236
+
+trees_pantrop9<-trees_pantrop8[!(trees_pantrop8$PLT_trois_bis %in% Unknown_genus$PLT_trois_bis)]
+
+trees_pantrop9[,uniqueN(PLT_deux_bis),]#still 4998
+
+Unknown_genus<-trees_pantrop77[,.(nb_genus_missing=sum(genus.x=="Unknown"), nb_trees=.N),by=PLT_trois_bis][,.(PLT_trois_bis,nb_genus_missing,nb_trees,pourcentage=((nb_trees-nb_genus_missing)/nb_trees)*100),][pourcentage<90]#236
+
+trees_pantrop9<-trees_pantrop9[!(trees_pantrop9$PLT_trois_bis %in% Unknown_genus$PLT_trois_bis)]
+
+trees_pantrop9[,uniqueN(PLT_deux_bis),]#still 4998
+
+Unknown_genus<-trees_pantrop77[,.(nb_genus_missing=sum(genus.x=="Not"), nb_trees=.N),by=PLT_trois_bis][,.(PLT_trois_bis,nb_genus_missing,nb_trees,pourcentage=((nb_trees-nb_genus_missing)/nb_trees)*100),][pourcentage<90]#236
+
+trees_pantrop9<-trees_pantrop9[!(trees_pantrop9$PLT_trois_bis %in% Unknown_genus$PLT_trois_bis)]
+
+trees_pantrop9[,uniqueN(PLT_deux_bis),]#still 4998
+
+
+Unknown_genus<-trees_pantrop77[,.(nb_genus_missing=sum(genus.x=="Indetermine"), nb_trees=.N),by=PLT_trois_bis][,.(PLT_trois_bis,nb_genus_missing,nb_trees,pourcentage=((nb_trees-nb_genus_missing)/nb_trees)*100),][pourcentage<90]#236
+
+trees_pantrop9<-trees_pantrop9[!(trees_pantrop9$PLT_trois_bis %in% Unknown_genus$PLT_trois_bis)]
+
+trees_pantrop9[,uniqueN(PLT_deux_bis),]#still 4998
+
+
+trees_pantrop9[,uniqueN(PLT_trois_bis),]#4762
+trees_pantrop9[,uniqueN(PLT_deux_bis),]#3287
+
+trees_pantrop9[genus.x=="Indet."]#0
+trees_pantrop9[genus.x=="unknown"]#....
+
+genus =trees_pantrop9[,.(unique(genus.x)),]
+
+```
+
+##11. Coordinates
+
+ I will remove plots without coordinates.
+
++ I have more than 30 plots (PLT_deux) with more than one set of coordinates...
+
+```{r}
+# Are there multiple coordinates per plot? => YES
+
+aca<-trees_pantrop9[,.(LAT=uniqueN(LAT_xbis)),by=PLT_trois_bis][LAT>1]
+aca1<-trees_pantrop9[,.(LON=uniqueN(LON_xbis)),by=PLT_trois_bis][LON>1]
+
+ac<-merge(aca,aca1,all=TRUE,suffixes="PLT_trois_bis")#47 PLT_trois_bis
+
+
+trees_pantrop10<-trees_pantrop9[!trees_pantrop9$PLT_trois_bis %in% ac$PLT_trois_bis]
+
+trees_pantrop10[,uniqueN(PLT_trois_bis),]#15 099 => 4715
+trees_pantrop10[,uniqueN(PLT_deux_bis),]#13 639 = >3 267
+
+
+rm("ac")
+
+```
+
+##12. Masque : Biome 1 = "Tropical and subtropical moist broadleaf forests"
+
+Via PLT_trois_bis or PLT_deux_bis ?
+Ok, if there is a unique coordinate per PLT_deux, then it means there are no coordinate changes from year to year.=> I checked and it is OK
+
+```{r}
+
+#Verification
+
+z<-trees_pantrop10[,.(unique(LAT_xbis,unique(LON_xbis))),by="PLT_deux_bis"]# 3299 instead of 3267, so some have more than one coordinate
+z2<-trees_pantrop10[,.(uniqueN(Year)),by="PLT_deux_bis"][V1>1] # 245 plots have more than one inventory year
+z3<-trees_pantrop10[trees_pantrop10$PLT_deux_bis %in% z2$PLT_deux_bis]
+
+
+aca<-z3[,.(LAT=uniqueN(LAT_xbis)),by=PLT_deux_bis][LAT>1]
+aca1<-z3[,.(LON=uniqueN(LON_xbis)),by=PLT_deux_bis][LON>1]
+
+ac<-merge(aca,aca1,all=TRUE,suffixes="PLT_deux_bis")# These are the plots with multiple years and multiple coordinates
+ac2<-z3[z3$PLT_deux_bis %in% ac$PLT_deux_bis]
+ac3<-ac2[,.(LAT=unique(LAT_xbis),LON=unique(LON_xbis),uniqueN(Year),unique(PLT_trois_bis)),by="PLT_deux_bis"]# Each case corresponds to two coordinates for two different years
+
+#####################################################################################################################################
+
+
+
+#Polygon
+biome1<-st_read("Biome1/vectorsToDriveExample.shp") 
+#plot(biome1)
+#st_crs(biome1)
+#class(biome1)
+#summary(biome1)
+plot2=trees_pantrop10
+#Points
+points<-plot2[,.(LON=unique(LON_xbis),LAT=unique(LAT_xbis)),by="PLT_trois_bis"]
+shp_points = st_as_sf(points, coords = c("LON", "LAT"), crs = 4326, remove=F)#Convert foreign object to an sf object
+
+
+extracted_points = st_intersection(shp_points, biome1)
+
+plot3=plot2[plot2$PLT_trois_bis %in% extracted_points$PLT_trois_bis]
+plot3[,uniqueN(PLT_deux_bis),]#1759
+plot3[,uniqueN(PLT_trois_bis),]#3080
+
+
+#Verification
+
+z<-plot3[,.(unique(LAT_xbis,unique(LON_xbis))),by="PLT_deux_bis"]# 13,675 instead of 13,639 → so some plots have more than one coordinate
+z2<-plot3[,.(uniqueN(Year)),by="PLT_deux_bis"][V1>1]# 253 plots have more than one inventory year
+z3<-plot3[plot3$PLT_deux_bis %in% z2$PLT_deux_bis]
+
+aca<-z3[,.(LAT=uniqueN(LAT_xbis)),by=PLT_deux_bis][LAT>1]
+aca1<-z3[,.(LON=uniqueN(LON_xbis)),by=PLT_deux_bis][LON>1]
+
+ac<-merge(aca,aca1,all=TRUE,suffixes="PLT_deux_bis") # Only 7 plots remain out of 32 with multiple coordinates and years
+ac2<-z3[z3$PLT_deux_bis %in% ac$PLT_deux_bis]
+ac3<-ac2[,.(LAT=unique(LAT_xbis),LON=unique(LON_xbis),uniqueN(Year),unique(PLT_trois_bis)),by="PLT_deux_bis"]
+
+#####################################################################################################################################
+
+```
+
+
+##13. Calculation of wood density for each tree
+
+Note : Since we can not give the raw data containing actual species names, the wood density cannot be retrieved using taxonomic correction and the getWoodDensity() function. As a result, the code designed to fetch species-specific wood density values does not work in this case.
+
+To demonstrate and continue the analysis, we arbitrarily assign realistic wood density values to each tree. These values range from 0.5 to 0.8.
+
+```{r}
+
+# I use the function to obtain wood density and also to correct taxa beforehand
+
+plot3[,c("genusCorr","speciesCorr","Corr"):=correctTaxo(genus.x,species.x),]
+
+
+plot3[,c("family.y","genus.y","species.y","meanWD", "sdWD","levelWD","nInd"):=getWoodDensity(genusCorr, speciesCorr, stand=PLT_trois_bis, family=NULL ,region="World"),]
+
+plot3[,uniqueN(PLT_trois_bis),]#3060
+plot3[,uniqueN(PLT_deux_bis),]#1739
+
+plot3[levelWD=="species",.N,]#1211366 (71,4% des arbres)
+plot3[levelWD=="genus",.N]#381141 (22,5%)
+#71,4+22,5 = +/- 94%
+
+
+
+
+```
+
+FOR DEMONSTRATION
+```{r}
+
+set.seed(123)  # To ensure reproducibility
+
+# Generate wood density values between 0.5 and 0.8, centered around 0.7
+n <- nrow(plot3)
+wood_density_values <- rbeta(n, shape1 = 5, shape2 = 2)  # Right-skewed distribution toward 1
+wood_density_values <- 0.5 + wood_density_values * (0.8 - 0.5)  # Rescale values to fall between 0.5 and 0.8
+
+# Add the values to the table
+plot3[, meanWD := wood_density_values]
+
+```
+
+#14.Sortie de plot_foret4
+
+```{r}
+fwrite(plot3,"plot_foret4.csv")
+```
