@@ -1,0 +1,57 @@
+// NOTES
+// ————————————————————————————————————————————————————————————————————————————————————————————
+
+
+// INITIAL PARAMETERS
+// ————————————————————————————————————————————————————————————————————————————————————————————
+
+var plots = ee.FeatureCollection("users/depoortp/plot_var4_height_final_coord");
+
+var ph=ee.Image("OpenLandMap/SOL/SOL_PH-H2O_USDA-4C1A2A_M/v02")
+var clay=ee.Image("OpenLandMap/SOL/SOL_CLAY-WFRACTION_USDA-3A1A1A_M/v02");
+var sand=ee.Image("OpenLandMap/SOL/SOL_SAND-WFRACTION_USDA-3A1A1A_M/v02");
+var org=ee.Image("OpenLandMap/SOL/SOL_ORGANIC-CARBON_USDA-6A1C_M/v02");
+var water=ee.Image("OpenLandMap/SOL/SOL_WATERCONTENT-33KPA_USDA-4B1C_M/v01");
+var bulk=ee.Image("OpenLandMap/SOL/SOL_BULKDENS-FINEEARTH_USDA-4A1H_M/v02");
+
+var ph_mean = ph.select('b0','b10','b30').reduce(ee.Reducer.mean()).rename('ph')
+var clay_mean = clay.select('b0','b10','b30').reduce(ee.Reducer.mean()).rename('clay')
+var sand_mean = sand.select('b0','b10','b30').reduce(ee.Reducer.mean()).rename('sand')
+var water_mean = water.select('b0','b10','b30').reduce(ee.Reducer.mean()).rename('water')
+var org_mean = org.select('b0','b10','b30').reduce(ee.Reducer.mean()).rename('org')
+var bulk_mean = bulk.select('b0','b10','b30').reduce(ee.Reducer.mean()).rename('bulk')
+var elevation = ee.Image('USGS/SRTMGL1_003').select('elevation');
+var slope = ee.Terrain.slope(elevation);
+
+var soil = ph_mean.addBands([clay_mean, sand_mean, water_mean, org_mean, bulk_mean])
+var topo = elevation.addBands([slope])
+
+Map.addLayer(clay_mean,{},"clay",false);
+Map.addLayer(bulk_mean,{},"bulk",false);
+Map.addLayer(ph_mean,{},"ph",false);
+
+// SAMPLING
+// ————————————————————————————————————————————————————————————————————————————————————————————
+
+
+soil = soil.sampleRegions({collection: plots, scale: 250});
+topo = topo.sampleRegions({collection: plots, scale: 30});
+
+var data = ee.FeatureCollection(soil.aggregate_array("PLT_trois_bis").map(function(name){
+  var data = soil.filterMetadata("PLT_trois_bis", "equals", name).first()
+  .set("slope", topo.filterMetadata("PLT_trois_bis", "equals", name).first().get("slope"))
+  .set("elevation", topo.filterMetadata("PLT_trois_bis", "equals", name).first().get("elevation"))
+  
+  return data
+}))
+
+
+// EXTRACTION
+// ————————————————————————————————————————————————————————————————————————————————————————————
+
+Export.table.toDrive({
+  collection: data,
+  folder: "GEE",
+  description:"plots_data",
+  fileFormat: "CSV"
+});
