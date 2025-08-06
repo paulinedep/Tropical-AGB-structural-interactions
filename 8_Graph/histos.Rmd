@@ -1,0 +1,1750 @@
+---
+title: "histos"
+output: html_document
+date: "2024-01-26"
+---
+
+Le but ici est de faire les histos qui montre la distribution de chaque variables structure + AGB par continent + Boxplot des RMSE
+
+#Importation + packages
+```{r}
+rm(list=ls()) 
+
+setwd("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph")
+
+##Packages
+library(data.table)
+library(ggplot2)
+library(plyr)#mu
+library(stringr)
+#library(ggpubr)
+#library(cowplot)
+library(multcomp)
+#library(stats)
+library(grid)
+library(gridExtra)
+#Une légende pour tous
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+library(flextable)
+
+##Importation
+
+data<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph/model_final.csv")
+data_af<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph/model_final_af.csv")
+data_pan<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph/model_final_pan_part1.csv")
+
+data_m<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph/model_final_montane.csv")
+data_af_m<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph/model_final_af_montane.csv")
+data_pan_m<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph/model_final_pan_part1_montane.csv")
+
+plot_var6<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph/Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+plot_var6<-plot_var6[!elevation.y>=1000]
+#Vérifier les nom propres
+data[,unique(sub_rep),]
+data[,unique(rep),]
+data[,unique(source),]
+data[,unique(area),]
+plot_var6[,unique(Continent)]
+
+#Enlever, garder juste H_FelReg
+#data<-data[!sub_rep=="H_FeldCont"&!sub_rep=="H_FeldPan"]
+```
+
+
+
+
+#1) Histo : Structure
+
+## Variables explicatives
+
+```{r}
+
+#Graphiques
+
+
+#Graphiques
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(Bio1_CHELSA))
+mu
+a<-ggplot(plot_var6, aes(x=Bio1_CHELSA,fill=Continent, color=Continent)) +#geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+#transparance
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  #ylim(0,0.35)+
+  #xlim(16,67)+
+  labs(x="Mean annual temperature (°C)", y = "Density")+
+  ggtitle("(a)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(Bio12_CHELSA))
+mu
+b<-ggplot(plot_var6, aes(x=Bio12_CHELSA,fill=Continent, color=Continent)) +#geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+#transparance
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  #ylim(0,0.35)+
+  #xlim(16,67)+
+  labs(x="Total annual precipitation (mm)", y = "Density")+
+  ggtitle("(b)")
+
+
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(Bio15_CHELSA))
+mu
+c<-ggplot(plot_var6, aes(x=Bio15_CHELSA,fill=Continent, color=Continent)) +#geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+#transparance
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  #ylim(0,0.35)+
+  #xlim(16,67)+
+  labs(x="Precipitation seasonality (%)", y = "Density")+
+  ggtitle("(c)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(slope))
+mu
+d<-ggplot(plot_var6, aes(x=slope,fill=Continent, color=Continent)) +#geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+#transparance
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  #ylim(0,0.35)+
+  #xlim(16,67)+
+  labs(x="Slope (°)", y = "Density")+
+  ggtitle("(d)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(sand))
+mu
+e<-ggplot(plot_var6, aes(x=sand,fill=Continent, color=Continent)) +#geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+#transparance
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  #ylim(0,0.35)+
+  #xlim(16,67)+
+  labs(x="Sand content of soil (% kg/kg)", y = "Density")+
+  ggtitle("(e)")
+
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(org))
+mu
+f<-ggplot(plot_var6, aes(x=org,fill=Continent, color=Continent)) +#geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+#transparance
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  #ylim(0,0.35)+
+  #xlim(16,67)+
+  labs(x="Soil organic carbon content (g/kg, scale*5)", y = "Density")+
+  ggtitle("(f)")
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(ph))
+mu
+
+g<-ggplot(plot_var6, aes(x=ph,fill=Continent, color=Continent)) +#geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+#transparance
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  #ylim(0,0.35)+
+  #xlim(16,67)+
+  labs(x=expression("Soil pH in H"[2]*"O (scale*10)"), y = "Density")+
+  ggtitle("(g)")
+
+
+
+grid.arrange(a,b,c,d,e,f,g,  ncol=2, widths=c(8,  8))
+
+
+```
+
+## AGB et HL_Feld_Reg = R. PRINCIPAL 
+```{r}
+
+##Carte #################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
+library(sf)
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(ggnewscale)
+
+# Read the layers
+biome <- st_read("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph/biome1.shp")
+biome <- st_union(biome)
+st_crs(biome) = NA
+#unique(ecozones$GEZ_TERM)
+
+point<-plot_var6[,.(LAT,LON,Continent)]
+
+library(maps)
+library(rworldmap)
+#library(ggrepel)
+world_map <- getMap()
+
+o<-ggplot() + 
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "white", color = "grey") +
+  #geom_sf(data = wrld_map, fill = "white") + 
+  geom_sf(data = biome, fill = "darkseagreen3",color="darkseagreen3") + 
+  #theme(panel.background = element_rect(fill = "lightblue", colour = "lightblue",size = 0.5, linetype = "solid"))+
+  coord_sf(xlim = c(-185, 185), ylim = c(-35, 35), expand = FALSE)+
+  labs(x="Longitude", y = "Latitude")+ 
+  #ggnewscale::new_scale_fill()+
+  geom_point(data=point, aes(x=LON, y=LAT,fill=Continent,color=Continent),shape=21,size=2)+
+  scale_color_manual(values=c("darkslategray","mediumorchid4","darkgoldenrod3","skyblue3","darkorange3"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  #scale_size_continuous(range=c(0.3,5),limits = c(27, 3387),breaks=c(100,500,1000))+
+  
+  #labs(fill="Tropical regions",size="Elevation (m)",color="Tropical regions")+
+  #guides(fill="none",color="none")+
+  theme(legend.position = "none")
+
+#########################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
+
+##j'enlève les Nas
+plot_var7<-plot_var6[!is.na(HL_FeldReg)]# pas de données pour NA aussi pour AGB_feld_Reg
+summary(plot_var6)
+library(sf)
+
+#Graphiques
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(DBHqm))
+mu
+a<-ggplot(plot_var6, aes(x=DBHqm,fill=Continent, color=Continent)) +#geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+#transparance
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  #ylim(0,0.35)+
+  #xlim(16,67)+
+  labs(x="Mean quadratic diameter (cm)", y = "Density")+
+  ggtitle("(b)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(BA))
+b<-ggplot(plot_var6, aes(x=BA,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  labs(title="",x=expression(paste("Basal area (m² ha"^"-1",")")), y = "Density")+
+  #ylim(0,0.35)+
+  #xlim(3,78)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(c)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(SD))
+c<-ggplot(plot_var6, aes(x=SD,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  labs(title="",x=expression(paste("Stem density (number of stems ha"^"-1",")")), y = "Density")+
+  #ylim(0,0.35)+
+  #xlim(33,1378)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(d)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(WDba))
+d<-ggplot(plot_var6, aes(x=WDba,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  labs(title="",x=expression(paste("Wood density weighted by basal area (g cm"^"-3",")")), y = "Density")+
+  #ylim(0,0.35)+
+  #xlim(0.4,1)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(e)")
+
+
+mu <- ddply(plot_var7, "Continent", summarise, grp.mean=mean(AGB_Feld_Reg))
+e<-ggplot(plot_var7, aes(x=AGB_Feld_Reg,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  labs(title="",x=expression(paste("Regional aboveground biomass (Mg ha"^"-1",")")), y = "Density")+
+  #ylim(0,0.35)+
+  #xlim(32,1406)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(a)")
+
+
+mu <- ddply(plot_var7, "Continent", summarise, grp.mean=mean(HL_FeldReg))
+f<-ggplot(plot_var7, aes(x=HL_FeldReg,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  labs(title="",x="Regional canopy height (m)", y = "Density")+
+  #ylim(0,0.35)+
+  #xlim(21,47)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(f)")
+
+
+##Une légende pour tous
+
+ici<-ggplot(plot_var6, aes(x=DBHqm,fill=Continent, color=Continent)) +
+  geom_density(alpha=0.5)+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.title=element_blank(),legend.text = element_text(size=10))
+
+legend <- get_legend(ici)
+
+blankPlot <- ggplot()+geom_blank(aes(0.1,0.1)) + cowplot::theme_nothing()
+
+
+
+##Pour mettre sous la carte 
+
+grid.arrange(e,a,b,blankPlot,c,d,f,legend,  ncol=4, widths=c(8, 8, 8,4))
+
+##tout ensemble
+# Move to a new page
+grid.newpage()
+# Create layout : nrow = 2, ncol = 2
+pushViewport(viewport(layout = grid.layout(3, 5)))
+# A helper function to define a region on the layout
+define_region <- function(row, col){
+  viewport(layout.pos.row = row, layout.pos.col = col)
+} 
+
+# Arrange the plots
+print(o, vp=define_region(1, 1:5))
+grid.text("A", x = unit(0.12, "npc"), y = unit(0.98, "npc"))
+grid.text("B", x = unit(0.12, "npc"), y = unit(0.7, "npc"))
+print(e, vp = define_region(2, 2))
+print(a, vp = define_region(2, 3))
+print(b, vp=define_region(2, 4))
+print(c, vp = define_region(3,2))
+print(d, vp = define_region(3,3))
+print(f, vp = define_region(3,4))
+
+
+
+```
+
+## (...)AGB et HL_Feld_Pan = ANNEXES
+```{r}
+
+
+
+#Graphiques
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(DBHqm))
+mu
+a<-ggplot(plot_var6, aes(x=DBHqm,fill=Continent, color=Continent)) +#geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  geom_density(alpha=0.5)+#transparance
+scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  #ylim(0,0.35)+
+  #xlim(16,67)+
+  labs(x="Mean quadratic diameter (cm)", y = "Density")+
+  ggtitle("(b)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(BA))
+b<-ggplot(plot_var6, aes(x=BA,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  labs(title="",x="Basal area (m²/ha)", y = "Density")+
+  #ylim(0,0.35)+
+  #xlim(3,78)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(c)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(SD))
+c<-ggplot(plot_var6, aes(x=SD,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  labs(title="",x="Stem density (number of stems/ha)", y = "Density")+
+  #ylim(0,0.35)+
+  #xlim(33,1378)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(d)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(WDba))
+d<-ggplot(plot_var6, aes(x=WDba,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  labs(title="",x="Wood density weighted by basal area (g/cm³)", y = "Density")+
+  #ylim(0,0.35)+
+  #xlim(0.4,1)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(e)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(AGB_Feld_Pan))
+e<-ggplot(plot_var6, aes(x=AGB_Feld_Pan,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  labs(title="",x="Aboveground biomass (Mg/ha)", y = "Density")+
+  #ylim(0,0.35)+
+  #xlim(32,1406)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(a)")
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(HL_FeldPan))
+f<-ggplot(plot_var6, aes(x=HL_FeldPan,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  labs(title="",x="Canopy height (m)", y = "Density")+
+  #ylim(0,0.35)+
+  #xlim(21,47)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(f)")
+
+
+##Une légende pour tous
+
+ici<-ggplot(plot_var6, aes(x=DBHqm,fill=Continent, color=Continent)) +
+  geom_density(alpha=0.5)+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  theme(legend.title=element_blank(),legend.text = element_text(size=10))
+
+legend <- get_legend(ici)
+
+blankPlot <- ggplot()+geom_blank(aes(0.1,0.1)) + cowplot::theme_nothing()
+
+
+##Les mettre tous ensemble
+grid.arrange(e,a,blankPlot, b,c,blankPlot,d,f,legend,  ncol=3, widths=c(8, 8, 4))
+
+##Pour mettre sous la carte 
+
+grid.arrange(e,a,b,blankPlot,c,d,f,legend,  ncol=4, widths=c(8, 8, 8,4))
+
+
+```
+
+### (...) Get information pour text
+```{r}
+
+##mean
+brut[,.(mean=mean(DBHqm),meadian=mean(DBHqm)),by="Continent4"]
+brut[,.(mean=mean(BA),meadian=mean(BA)),by="Continent4"]
+brut[,.(mean=mean(SD),meadian=mean(SD)),by="Continent4"]
+brut[,.(mean=mean(WDba),meadian=mean(WDba)),by="Continent4"]
+brut[,.(mean=mean(AGB_Feld_Reg),meadian=mean(AGB_Feld_Reg)),by="Continent4"]
+
+## ANOVA: est -ce que les means sont significativement différentes ? 
+brut3<-brut
+brut3$Continent4<-as.factor(brut$Continent4)
+dbh <- lm(DBHqm~Continent4, data=brut3) 
+anova(dbh)
+dbh <- glht(dbh, linfct=mcp(Continent4="Tukey")) 
+summary(dbh) 
+tuk.cld <- cld(dbh) 
+tuk.cld 
+
+dbh <- lm(BA~Continent4, data=brut3) 
+anova(dbh)
+dbh <- glht(dbh, linfct=mcp(Continent4="Tukey")) 
+summary(dbh) 
+tuk.cld <- cld(dbh) 
+tuk.cld 
+
+dbh <- lm(SD~Continent4, data=brut3) 
+anova(dbh)
+dbh <- glht(dbh, linfct=mcp(Continent4="Tukey")) 
+summary(dbh) 
+tuk.cld <- cld(dbh) 
+tuk.cld 
+
+
+dbh <- lm(WDba~Continent4, data=brut3) 
+anova(dbh)
+dbh <- glht(dbh, linfct=mcp(Continent4="Tukey")) 
+summary(dbh) 
+tuk.cld <- cld(dbh) 
+tuk.cld 
+
+dbh <- lm(H_FeldReg~Continent4, data=brut3) 
+anova(dbh)
+dbh <- glht(dbh, linfct=mcp(Continent4="Tukey")) 
+summary(dbh) 
+tuk.cld <- cld(dbh) 
+tuk.cld 
+
+dbh <- lm(AGB_Feld_Reg~Continent4, data=brut3) 
+anova(dbh)
+dbh <- glht(dbh, linfct=mcp(Continent4="Tukey")) 
+summary(dbh) 
+tuk.cld <- cld(dbh) 
+tuk.cld
+
+```
+
+## Diff AGB = ANNEXES
+
+```{r}
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(AGB_Feld_Pan))
+a<-ggplot(plot_var6, aes(x=AGB_Feld_Pan,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  labs(title="",x=expression(paste("Pantropical aboveground biomass (Mg ha"^"-1",")")), y = "Density")+
+  #ylim(0,0.35)+
+  xlim(3.5,1105)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(a)")
+
+plot_var7<-plot_var6[!is.na(AGB_Feld_Cont)]
+
+mu <- ddply(plot_var7, "Continent", summarise, grp.mean=mean(AGB_Feld_Cont))
+b<-ggplot(plot_var7, aes(x=AGB_Feld_Cont,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  labs(title="",x=expression(paste("Continental aboveground biomass (Mg ha"^"-1",")")), y = "Density")+
+  #ylim(0,0.35)+
+  xlim(3.5,1105)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(b)")
+
+plot_var8<-plot_var6[!is.na(AGB_Feld_Reg)]
+
+mu <- ddply(plot_var8, "Continent", summarise, grp.mean=mean(AGB_Feld_Reg))
+c<-ggplot(plot_var8, aes(x=AGB_Feld_Reg,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  labs(title="",x=expression(paste("Regional aboveground biomass (Mg ha"^"-1",")")), y = "Density")+
+  #ylim(0,0.35)+
+  xlim(3.5,1105)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(c)")
+
+plot_var9<-plot_var6[!is.na(AGB_Chave_eq7)]
+
+mu <- ddply(plot_var9, "Continent", summarise, grp.mean=mean(AGB_Chave_eq7))
+d<-ggplot(plot_var9, aes(x=AGB_Chave_eq7,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  labs(title="",x=expression(paste("Environmental aboveground biomass (Mg ha"^"-1",")")), y = "Density")+
+  #ylim(0,0.35)+
+  xlim(3.5,1105)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(d)")
+
+
+
+
+ici<-ggplot(plot_var6, aes(x=AGB_Feld_Pan,fill=Continent, color=Continent)) +
+    geom_density(alpha=0.5)+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+    theme(legend.title=element_blank(),legend.text = element_text(size=10))
+
+legend <- get_legend(ici)
+
+blankPlot <- ggplot()+geom_blank(aes(1,1)) + cowplot::theme_nothing()
+
+grid.arrange(a,b,blankPlot,c,d,legend,  ncol=3, widths=c(8, 8, 4))
+```
+
+## Diff Hauteur = ANNEXES
+
+```{r}
+
+
+mu <- ddply(plot_var6, "Continent", summarise, grp.mean=mean(HL_FeldPan))
+a<-ggplot(plot_var6, aes(x=HL_FeldPan,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","goldenrod1","skyblue1","darkorange"))+
+  labs(title="",x="Pantropical canopy height (m)", y = "Density")+
+  #ylim(0,0.35)+
+  xlim(13.5, 45)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(a)")
+
+plot_var7<-plot_var6[!is.na(HL_FeldCont)]
+
+mu <- ddply(plot_var7, "Continent", summarise, grp.mean=mean(HL_FeldCont))
+b<-ggplot(plot_var7, aes(x=HL_FeldCont,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  labs(title="",x="Continental canopy height (m)", y = "Density")+
+  #ylim(0,0.35)+
+  xlim(13.5, 45)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(b)")
+
+plot_var8<-plot_var6[!is.na(HL_FeldReg)]
+
+mu <- ddply(plot_var8, "Continent", summarise, grp.mean=mean(HL_FeldReg))
+c<-ggplot(plot_var8, aes(x=HL_FeldReg,fill=Continent, color=Continent)) + #geom_histogram( aes(y=..count..),position="identity",alpha=0.4) + 
+  geom_density(alpha=0.5)+
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Continent), linetype="dashed",linewidth=1) +
+  theme_classic()+
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 9),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 11),
+        axis.text.y = element_text(size = 9)
+  )+
+  scale_color_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  labs(title="",x="Regional canopy height (m)", y = "Density")+
+  #ylim(0,0.35)+
+  xlim(13.5, 45)+
+  theme(legend.title=element_blank())+ 
+  ggtitle("(c)")
+
+
+
+
+
+
+ici<-ggplot(plot_var6, aes(x=AGB_Feld_Pan,fill=Continent, color=Continent)) +
+    geom_density(alpha=0.5)+
+  scale_color_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+  scale_fill_manual(values=c("cyan4","mediumorchid3","skyblue1","darkorange"))+
+    theme(legend.title=element_blank(),legend.text = element_text(size=10))
+
+legend <- get_legend(ici)
+
+blankPlot <- ggplot()+geom_blank(aes(0.1,0.1)) + cowplot::theme_nothing()
+
+
+##Pour mettre sous la carte 
+
+grid.arrange(a,b,c,legend,  ncol=4, widths=c(8, 8, 8,4))
+```
+
+#2) Boxplot : RMSE
+
+##Toutes sources climatiques confondues
+
+###HL_Pan
+```{r}
+data2<-data_pan[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+data2$sub_rep <- factor(data2$sub_rep,
+                        levels = c('HL_FeldPan','WDba',"DBH_qm","SD","BA","AGB_Feld_Reg","AGB_Feld_Cont","AGB_Feld_Pan","AGB_Chave_eq7"),ordered = TRUE)
+
+data2$rep <- factor(data2$rep,
+                    levels = c("SC","AGB"),ordered = TRUE)
+levels(data2$sub_rep)
+
+a<-ggplot(data2[area=="Pantropic"], aes(x=sub_rep, y=RMSE, fill=sub_rep, colour=sub_rep)) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=1000, alpha=0.5,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.25)+ #mettre les observations et gérer l'étendue des données
+  #scale_fill_manual(values=c(c("steelblue4","turquoise4","turquoise3","cyan2","cadetblue1","gold","orange","darkorange","darkorange2")))+
+  #scale_colour_manual(values=c(c("steelblue4","turquoise4","turquoise3","cyan2","cadetblue2","gold2","orange","darkorange","darkorange2")))+
+  scale_fill_manual(values=c(c("steelblue4","steelblue3","steelblue2","steelblue1","skyblue","darkorange")))+
+  scale_colour_manual(values=c(c("steelblue4","steelblue3","steelblue2","steelblue1","skyblue","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+#,x="",tag =expression(paste(" * estimated \n (1) Region-specific H-D model of Feldpaush", italic("et al.,"), "2012, (2) Continent-specific H-D model of Feldpaush ", italic("et al.,"), " 2012, (3) Pantropical H-D model of Feldpaush" , italic("et al.,"), " 2012, (4) eq. 7 of Chave ", italic("et al.,"), " 2014")))
+  
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11),
+        plot.tag = element_text(size=8,hjust=0),
+        plot.tag.position = c(0.03,0.02))+
+  ylim(0,50)+
+  geom_vline(xintercept=5.5, color="black", linetype="dashed",linewidth=0.5)+
+  
+  scale_x_discrete(labels=str_wrap(c("Canopy height*","Wood density \n weighted by \n basal area","Mean quadratic diameter","Stem density","Basal area","Aboveground \n  biomass*"),width=20))+
+  annotate("text", x=0.6, y=50, label= "n=7")+ 
+  ggtitle("Pantropic")+
+  annotate("text", x=5.7, y=49, label= "n=7")
+
+
+e<-ggplot(data2[area=="Pantropic"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  #ylim(0,0.8)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("Pantropic")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+data2<-data_af[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+data2$sub_rep <- factor(data2$sub_rep,
+                        levels = c('HL_FeldPan','WDba',"DBH_qm","SD","BA","AGB_Feld_Reg","AGB_Feld_Cont","AGB_Feld_Pan","AGB_Chave_eq7"),ordered = TRUE)
+
+data2$rep <- factor(data2$rep,
+                    levels = c("SC","AGB"),ordered = TRUE)
+levels(data2$rep)
+
+b<-ggplot(data2[area=="Africa"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("Africa")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+data2<-data[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+data2$sub_rep <- factor(data2$sub_rep,
+                        levels = c('HL_FeldPan','WDba',"DBH_qm","SD","BA","AGB_Feld_Pan"),ordered = TRUE)
+
+data2$rep <- factor(data2$rep,
+                    levels = c("SC","AGB"),ordered = TRUE)
+levels(data2$sub_rep)
+
+
+c<-ggplot(data2[area=="Eurasia"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11)
+  )+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("Asia")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+d<-ggplot(data2[area=="South America"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("South America")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+f<-ggplot(data2[area=="Oceania"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%) ",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("Oceania")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+g<-ggplot(data2[area=="North America"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("Central America")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+
+# Move to a new page
+grid.newpage()
+# Create layout : nrow = 2, ncol = 2
+pushViewport(viewport(layout = grid.layout(2, 5)))
+# A helper function to define a region on the layout
+define_region <- function(row, col){
+  viewport(layout.pos.row = row, layout.pos.col = col)
+} 
+
+# Arrange the plots
+print(a, vp=define_region(1, 1:4))
+print(b, vp = define_region(2, 3))
+print(c, vp = define_region(2, 4))
+print(e, vp=define_region(1, 5))
+print(d, vp = define_region(2,2))
+print(f, vp = define_region(2,5))
+print(g, vp = define_region(2,1))
+
+
+
+
+```
+###HL_Pan, sans montagne
+```{r}
+data2<-data_pan_m[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+data2$sub_rep <- factor(data2$sub_rep,
+                        levels = c('HL_FeldPan','WDba',"DBH_qm","SD","BA","AGB_Feld_Reg","AGB_Feld_Cont","AGB_Feld_Pan","AGB_Chave_eq7"),ordered = TRUE)
+
+data2$rep <- factor(data2$rep,
+                    levels = c("SC","AGB"),ordered = TRUE)
+levels(data2$sub_rep)
+
+a<-ggplot(data2[area=="Pantropic"], aes(x=sub_rep, y=RMSE, fill=sub_rep, colour=sub_rep)) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=1000, alpha=0.5,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.25)+ #mettre les observations et gérer l'étendue des données
+  #scale_fill_manual(values=c(c("steelblue4","turquoise4","turquoise3","cyan2","cadetblue1","gold","orange","darkorange","darkorange2")))+
+  #scale_colour_manual(values=c(c("steelblue4","turquoise4","turquoise3","cyan2","cadetblue2","gold2","orange","darkorange","darkorange2")))+
+  scale_fill_manual(values=c(c("steelblue4","steelblue3","steelblue2","steelblue1","skyblue","darkorange")))+
+  scale_colour_manual(values=c(c("steelblue4","steelblue3","steelblue2","steelblue1","skyblue","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+#,x="",tag =expression(paste(" * estimated \n (1) Region-specific H-D model of Feldpaush", italic("et al.,"), "2012, (2) Continent-specific H-D model of Feldpaush ", italic("et al.,"), " 2012, (3) Pantropical H-D model of Feldpaush" , italic("et al.,"), " 2012, (4) eq. 7 of Chave ", italic("et al.,"), " 2014")))
+  
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11),
+        plot.tag = element_text(size=8,hjust=0),
+        plot.tag.position = c(0.03,0.02))+
+  ylim(0,50)+
+  geom_vline(xintercept=5.5, color="black", linetype="dashed",linewidth=0.5)+
+  
+  scale_x_discrete(labels=str_wrap(c("Canopy height*","Wood density \n weighted by \n basal area","Mean quadratic diameter","Stem density","Basal area","Aboveground \n  biomass*"),width=20))+
+  annotate("text", x=0.6, y=50, label= "n=7")+ 
+  ggtitle("Pantropic")+
+  annotate("text", x=5.7, y=49, label= "n=7")
+
+
+e<-ggplot(data2[area=="Pantropic"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  #ylim(0,0.8)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("Pantropic")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+data2<-data_af_m[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+data2$sub_rep <- factor(data2$sub_rep,
+                        levels = c('HL_FeldPan','WDba',"DBH_qm","SD","BA","AGB_Feld_Reg","AGB_Feld_Cont","AGB_Feld_Pan","AGB_Chave_eq7"),ordered = TRUE)
+
+data2$rep <- factor(data2$rep,
+                    levels = c("SC","AGB"),ordered = TRUE)
+levels(data2$rep)
+
+b<-ggplot(data2[area=="Africa"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("Africa")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+data2<-data_m[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+data2$sub_rep <- factor(data2$sub_rep,
+                        levels = c('HL_FeldPan','WDba',"DBH_qm","SD","BA","AGB_Feld_Pan"),ordered = TRUE)
+
+data2$rep <- factor(data2$rep,
+                    levels = c("SC","AGB"),ordered = TRUE)
+levels(data2$sub_rep)
+
+
+c<-ggplot(data2[area=="Eurasia"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11)
+  )+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("Asia")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+d<-ggplot(data2[area=="South America"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("South America")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+f<-ggplot(data2[area=="Oceania"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%) ",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("Oceania")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+g<-ggplot(data2[area=="North America"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("Central America")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB*"))+
+  annotate("text", x=0.7, y=50, label= "n=35")+
+  annotate("text", x=1.8, y=50, label= "n=7")
+
+
+# Move to a new page
+grid.newpage()
+# Create layout : nrow = 2, ncol = 2
+pushViewport(viewport(layout = grid.layout(2, 5)))
+# A helper function to define a region on the layout
+define_region <- function(row, col){
+  viewport(layout.pos.row = row, layout.pos.col = col)
+} 
+
+# Arrange the plots
+print(a, vp=define_region(1, 1:4))
+print(b, vp = define_region(2, 3))
+print(c, vp = define_region(2, 4))
+print(e, vp=define_region(1, 5))
+print(d, vp = define_region(2,2))
+print(f, vp = define_region(2,5))
+print(g, vp = define_region(2,1))
+
+
+
+
+```
+###(...)Sans Hauteur
+```{r}
+data2<-data[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="HL_FeldPan"]
+data2$sub_rep <- factor(data2$sub_rep,
+                       levels = c('WDba',"DBH_qm","SD","BA","AGB_Feld_Reg","AGB_Feld_Cont","AGB_Feld_Pan","AGB_Chave_eq7"),ordered = TRUE)
+levels(data2$sub_rep)
+
+data[,unique(area)]
+summary(data)
+
+a<-ggplot(data2[area=="Pantropic"], aes(x=sub_rep, y=RMSE, fill=sub_rep, colour=sub_rep)) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=1000, alpha=0.5,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.25)+ #mettre les observations et gérer l'étendue des données
+  #scale_fill_manual(values=c(c("steelblue4","turquoise4","turquoise3","cyan2","cadetblue1","gold","orange","darkorange","darkorange2")))+
+  #scale_colour_manual(values=c(c("steelblue4","turquoise4","turquoise3","cyan2","cadetblue2","gold2","orange","darkorange","darkorange2")))+
+  scale_fill_manual(values=c(c("steelblue3","steelblue2","steelblue1","skyblue","palegoldenrod","goldenrod1","orange","darkorange2")))+
+  scale_colour_manual(values=c(c("steelblue3","steelblue2","steelblue1","skyblue","palegoldenrod","goldenrod1","orange","darkorange2")))+
+  labs(y = "RMSE (%)",x="")+#,x="",tag =expression(paste(" * estimated \n (1) Region-specific H-D model of Feldpaush", italic("et al.,"), "2012, (2) Continent-specific H-D model of Feldpaush ", italic("et al.,"), " 2012, (3) Pantropical H-D model of Feldpaush" , italic("et al.,"), " 2012, (4) eq. 7 of Chave ", italic("et al.,"), " 2014")))
+ 
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 9),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11),
+        plot.tag = element_text(size=8,hjust=0),
+        plot.tag.position = c(0.03,0.02))+
+  ylim(0,50)+
+  geom_vline(xintercept=4.5, color="black", linetype="dashed",linewidth=0.5)+
+ 
+  scale_x_discrete(labels=str_wrap(c("Wood density \n weighted by \n basal area","Mean quadratic diameter","Stem density","Basal area","Regional \n AGB*","Continental \n AGB*","Pantropical \n AGB*","Environmental \n AGB*"),width=20))+
+  annotate("text", x=0.6, y=50, label= "n=7")+ 
+  ggtitle("(a) Pantropic")+
+ annotate("text", x=4.7, y=49, label= "n=7")
+  
+
+data2$rep <- factor(data2$rep,
+                        levels = c("SC","AGB"),ordered = TRUE)
+levels(data2$rep)
+
+b<-ggplot(data2[area=="Africa"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("(e) Africa")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB"))+
+ annotate("text", x=0.7, y=50, label= "n=28")+
+ annotate("text", x=1.8, y=50, label= "n=28")
+
+c<-ggplot(data2[area=="Eurasia"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11)
+        )+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("(f) Asia")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB"))+
+ annotate("text", x=0.7, y=50, label= "n=28")+
+ annotate("text", x=1.8, y=50, label= "n=28")
+
+d<-ggplot(data2[area=="South America"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("(d) South America")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB"))+
+ annotate("text", x=0.7, y=50, label= "n=28")+
+ annotate("text", x=1.8, y=50, label= "n=28")
+
+e<-ggplot(data2[area=="Pantropic"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("(b) Pantropic")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB"))+
+ annotate("text", x=0.7, y=50, label= "n=28")+
+ annotate("text", x=1.8, y=50, label= "n=28")
+
+f<-ggplot(data2[area=="Oceania"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%) ",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("(g) Oceania")+
+  scale_x_discrete(labels=c("Structural \n  attributes","AGB"))+
+ annotate("text", x=0.7, y=50, label= "n=28")+
+ annotate("text", x=1.8, y=50, label= "n=28")
+
+g<-ggplot(data2[area=="North America"], aes(x=rep, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8,width=0.3)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+ scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2)+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.text.x = element_text(size = 11),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 11))+
+  ylim(0,50)+
+  geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  ggtitle("(c) Central America")+
+  scale_x_discrete(labels=c("Structural \n  attributes", "AGB"))+
+ annotate("text", x=0.7, y=50, label= "n=28")+
+ annotate("text", x=1.8, y=50, label= "n=7")
+
+
+# Move to a new page
+grid.newpage()
+# Create layout : nrow = 2, ncol = 2
+pushViewport(viewport(layout = grid.layout(2, 5)))
+# A helper function to define a region on the layout
+define_region <- function(row, col){
+  viewport(layout.pos.row = row, layout.pos.col = col)
+} 
+
+# Arrange the plots
+print(a, vp=define_region(1, 1:4))
+print(b, vp = define_region(2, 3))
+print(c, vp = define_region(2, 4))
+print(e, vp=define_region(1, 5))
+print(d, vp = define_region(2,2))
+print(f, vp = define_region(2,5))
+print(g, vp = define_region(2,1))
+
+
+
+```
+
+###Calcul %
+```{r}
+##mean (rmse)
+data2_pan<-data_pan[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+
+sc<-data2_pan[area=="Pantropic"&rep=="SC",.(mean(RMSE))]
+agb<-data2_pan[area=="Pantropic"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+data2<-data[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+
+sc<-data2[area=="South America"&rep=="SC",.(mean(RMSE))]
+agb<-data2[area=="South America"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+
+sc<-data2[area=="North America"&rep=="SC",.(mean(RMSE))]
+agb<-data2[area=="North America"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+
+sc<-data2[area=="Oceania"&rep=="SC",.(mean(RMSE))]
+agb<-data2[area=="Oceania"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+
+
+sc<-data2[area=="Eurasia"&rep=="SC",.(mean(RMSE))]
+agb<-data2[area=="Eurasia"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+
+data2<-data_af[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+
+
+sc<-data2[area=="Africa"&rep=="SC",.(mean(RMSE))]
+agb<-data2[area=="Africa"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+
+##sans montagne
+data2_pan<-data_pan_m[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+
+sc<-data2_pan[area=="Pantropic"&rep=="SC",.(mean(RMSE))]
+agb<-data2_pan[area=="Pantropic"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+data2<-data_m[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+
+sc<-data2[area=="South America"&rep=="SC",.(mean(RMSE))]
+agb<-data2[area=="South America"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+
+sc<-data2[area=="North America"&rep=="SC",.(mean(RMSE))]
+agb<-data2[area=="North America"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+
+sc<-data2[area=="Oceania"&rep=="SC",.(mean(RMSE))]
+agb<-data2[area=="Oceania"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+
+
+sc<-data2[area=="Eurasia"&rep=="SC",.(mean(RMSE))]
+agb<-data2[area=="Eurasia"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+
+
+data2<-data_af_m[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+
+
+sc<-data2[area=="Africa"&rep=="SC",.(mean(RMSE))]
+agb<-data2[area=="Africa"&rep=="AGB",.(mean(RMSE))]
+(((agb-sc)/agb))*100
+```
+##Par source climatique
+```{r}
+#Sources de données climatiques
+data2<-data[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+data2[sub_rep=="HL_FeldPan",sub_rep2:="H"]
+data2[sub_rep%like%"AGB_",sub_rep2:="AGB"]
+data2[is.na(sub_rep2),sub_rep2:="SC"]
+data2[,sub_rep3:="SC_H"]
+data2[sub_rep2=="H",sub_rep3:="SC_H"]
+data2[sub_rep2=="AGB",sub_rep3:="AGB"]
+data2<-rbind(data2[,.(RMSE,source,sub_rep=sub_rep3)],data2[sub_rep2=="SC",.(RMSE,source,sub_rep=sub_rep2)])
+
+data3$sub_rep <- factor(data2$sub_rep,
+                        levels = c('SC_H','SC','AGB'),ordered = TRUE)
+levels(data2$sub_rep)
+
+
+ggplot(data2, aes(x=source, y=RMSE, fill=sub_rep, colour=sub_rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue3","dodgerblue1","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","dodgerblue2","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2,position = position_dodge(0.75))+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title = element_text(size = 16),
+        axis.text= element_text(size = 14))+
+  ylim(0,60)+
+  #geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  #ggtitle("(a)")
+theme(legend.position = "none",axis.text= element_text( size=10),axis.title = element_text(size = 10),)+
+  scale_x_discrete(labels=c("CHELSA", "CRU TS", "ERA5","MODIS\n +\n CHIRPS","MODIS\n +\n IMERG", "TerraClimate", "WorldClim"))
+
+
+
+
+data2<-data[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"]
+data2[sub_rep=="HL_FeldPan",sub_rep2:="H"]
+data2[sub_rep%like%"AGB_",sub_rep2:="AGB"]
+data2[is.na(sub_rep2),sub_rep2:="SC"]
+data2[,sub_rep3:="SC_H"]
+data2[sub_rep2=="H",sub_rep3:="SC_H"]
+data2[sub_rep2=="AGB",sub_rep3:="AGB"]
+data3<-rbind(data3[,.(RMSE,source,sub_rep=sub_rep3)],data2[sub_rep2=="SC",.(RMSE,source,sub_rep=sub_rep2)])
+
+data3$sub_rep <- factor(data3$sub_rep,
+                        levels = c('SC_H','SC','AGB'),ordered = TRUE)
+levels(data3$sub_rep)
+
+
+ggplot(data3, aes(x=source, y=RMSE, fill=sub_rep, colour=sub_rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue3","dodgerblue1","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","dodgerblue2","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2,position = position_dodge(0.75))+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title = element_text(size = 16),
+        axis.text= element_text(size = 14))+
+  ylim(0,60)+
+  #geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  #ggtitle("(a)")
+theme(legend.position = "none",axis.text= element_text( size=10),axis.title = element_text(size = 10),)+
+  scale_x_discrete(labels=c("CHELSA", "CRU TS", "ERA5","MODIS\n +\n CHIRPS","MODIS\n +\n IMERG", "TerraClimate", "WorldClim"))
+
+```
+
+###sans hauteur
+```{r}
+#Sources de données climatiques
+data2<-data[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="HL_FeldReg"&!sub_rep=="HL_FeldCont"&!sub_rep=="H_FeldReg"&!sub_rep=="HL_FeldPan"]
+data2$rep <- factor(data2$rep,
+                        levels = c('SC','AGB'),ordered = TRUE)
+levels(data2$rep)
+
+
+ggplot(data2, aes(x=source, y=RMSE, fill=rep, colour=rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("dodgerblue2","darkorange")))+
+  scale_colour_manual(values=c(c("dodgerblue4","darkorange1")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2,position = position_dodge(0.75))+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title = element_text(size = 16),
+        axis.text= element_text(size = 14))+
+  ylim(0,60)+
+  #geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  #ggtitle("(a)")
+theme(legend.position = "none",axis.text= element_text( size=10),axis.title = element_text(size = 10),)+
+  scale_x_discrete(labels=c("CHELSA", "CRU TS", "ERA5","MODIS\n +\n CHIRPS","MODIS\n +\n IMERG", "TerraClimate", "WorldClim"))
+
+```
+# (...)deux bosses
+```{r}
+essais=plot_var6[Continent=="South America"]
+library(BIOMASS)
+essais[,region_Feld:=as.data.frame.vector(computeFeldRegion(cbind(LON,LAT), level="region")),] 
+
+
+ggplot(essais, aes(x=region_Feld, y=HL_FeldReg, fill=region_Feld, color=region_Feld),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.8)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+   labs(y = "Regional canopy height (m)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2,position = position_dodge(0.75))+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title = element_text(size = 16),
+        axis.text= element_text(size = 14))+
+  #ylim(0,60)+
+  #geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  #ggtitle("(a)")
+theme(legend.position = "none",axis.text= element_text( size=10),axis.title = element_text(size = 10),)
+  
+##Carte #################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
+library(sf)
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(ggnewscale)
+
+# Read the layers
+biome <- st_read("biome1.shp")
+biome <- st_union(biome)
+st_crs(biome) = NA
+#unique(ecozones$GEZ_TERM)
+
+plot_var6=plot_var6[HL_FeldReg>=27,E:="A"][HL_FeldReg<27,E:="B"]
+
+point<-plot_var6[Continent=="South America",.(LAT,LON,E)]
+
+library(maps)
+library(rworldmap)
+#library(ggrepel)
+world_map <- getMap()
+
+ggplot() + 
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "white", color = "grey") +
+  #geom_sf(data = wrld_map, fill = "white") + 
+  geom_sf(data = biome, fill = "darkseagreen3",color="darkseagreen3") + 
+  #theme(panel.background = element_rect(fill = "lightblue", colour = "lightblue",size = 0.5, linetype = "solid"))+
+  coord_sf(xlim = c(-185, 185), ylim = c(-35, 35), expand = FALSE)+
+  labs(x="Longitude", y = "Latitude")+ 
+  #ggnewscale::new_scale_fill()+
+  geom_point(data=point, aes(x=LON, y=LAT,fill=E,color=E),shape=21,size=2)+
+  scale_color_manual(values=c("red","green"))+
+  scale_fill_manual(values=c("red","green"))+
+  #scale_size_continuous(range=c(0.3,5),limits = c(27, 3387),breaks=c(100,500,1000))+
+ 
+  #labs(fill="Tropical regions",size="Elevation (m)",color="Tropical regions")+
+  #guides(fill="none",color="none")+
+  theme(legend.position = "none")
+
+```
+##(...)Toutes les hauteurs
+
+```{r}
+#Sources de données climatiques
+
+data3<-data[!sub_rep=="DBH_qm"&!sub_rep=="BA"&!sub_rep=="SD"&!sub_rep=="WDba"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Pan"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Feld_Reg"&!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="H_FeldReg"]
+data3$sub_rep <- factor(data3$sub_rep,
+                        levels = c('HL_FeldPan',"HL_FeldCont","HL_FeldReg"),ordered = TRUE)
+levels(data3$rep)
+
+
+ggplot(data3, aes(x=sub_rep, y=RMSE, fill=sub_rep, colour=sub_rep),widths=4) + #fill=remplir de couleur les boîte et colour= colorier les points et boites
+  geom_boxplot(outlier.alpha=2000, alpha=0.5)+ #alpha=transparence
+  #geom_jitter(width=0.2)+ #mettre les observations et gérer l'étendue des données
+  scale_fill_manual(values=c(c("steelblue1","skyblue","palegoldenrod")))+
+  scale_colour_manual(values=c(c("steelblue1","skyblue","palegoldenrod")))+
+  labs(y = "RMSE (%)",x="")+
+  stat_summary(fun=mean,colour="black",geom="point",shape=18,size=2,position = position_dodge(0.75))+
+  theme_classic()+
+  theme(legend.position = "none",
+        legend.title=element_blank(),
+        axis.title = element_text(size = 16),
+        axis.text= element_text(size = 14))+
+  ylim(0,60)+
+  #geom_vline(xintercept=1.5, color="black", linetype="dashed",linewidth=0.5)+ 
+  #ggtitle("(a)")
+theme(legend.position = "none",axis.text= element_text( size=10),axis.title = element_text(size = 10),)#+
+  #scale_x_discrete(labels=c("CHELSA", "CRU", "ERA5","MODIS\n +\n CHIRPS","MODIS\n +\n IMERG", "TerraClimate", "WorldClim"))
+
+data3[,mean(RMSE),by="sub_rep"]
+data3[,.N,by="sub_rep"]
+
+```
+
+###(...) Get information from the text
+```{r}
+
+data2[area=="Pantropic",.N,by="sub_rep"]
+data2[area=="Pantropic",.N,by="rep"]
+
+
+data2[area=="South America",.N,by="rep"]
+data2[area=="North America",.N,by="rep"]
+data2[area=="Africa",.N,by="rep"]
+data2[area=="Oceania",.N,by="rep"]
+data2[area=="Eurasia",.N,by="rep"]
+
+data2[area=="Eurasia",.(mean(RMSE)),by="rep"]
+data2[area=="Oceania",.(mean(RMSE)),by="rep"]
+data2[area=="Africa",.(mean(RMSE)),by="rep"]
+data2[area=="North America",.(mean(RMSE)),by="rep"]
+data2[area=="South America",.(mean(RMSE)),by="rep"]
+
+data2<-data[!sub_rep=="H_FeldPan"&!sub_rep=="H_FeldCont"&!sub_rep=="DBH_qm"&!sub_rep=="BA"&!sub_rep=="H_FeldReg"&!sub_rep=="SD"&!sub_rep=="AGB_Feld_Cont"&!sub_rep=="AGB_Chave_eq7"&!sub_rep=="AGB_Feld_Pan"&!sub_rep=="AGB_Feld_Reg"&!sub_rep=="WDba"]
+
+ici<-data2[,.(RMSE=mean(RMSE)),by=c("sub_rep","area")]
+ici2<-dcast(ici, 
+sub_rep ~ area,
+value.var = "RMSE")
+
+
+data[area=="Pantropic",mean(RMSE),by="sub_rep"]
+```

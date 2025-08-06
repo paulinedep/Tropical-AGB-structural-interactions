@@ -1,0 +1,4414 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-04-14"
+---
+#Importation
+##DAG direct + tab coef direct
+```{r }
+rm(list=ls()) 
+
+setwd("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph/")
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+library(ggplot2)
+library(qgraph)
+library(igraph)
+
+library(ggraph)
+library(tidyverse)
+#Tableau,pour tous les continents, toutes les variables réponse, effet total env sur chaque variable réponse (attributs et AGBs)
+mean_coef_all_all<-fread("mean_coef_all_all.csv")
+rmse_mean_all_all<-fread("rmse_mean_all_all.csv")
+rmse_mean_all_all<-rmse_mean_all_all[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais<-dcast(mean_coef_all_all,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet direct Env sur BA
+mean_coef_ba<-fread("mean_coef_ba_dbh_sd.csv")
+rmse_mean_ba<-fread("rmse_mean_ba_dbh_sd.csv")
+rmse_mean_ba<-rmse_mean_ba[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais2<-dcast(mean_coef_ba,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet direct env sur DBHqm
+mean_coef_dbh<-fread("mean_coef_dbh_sd.csv")
+rmse_mean_dbh<-fread("rmse_mean_dbh_sd.csv")
+rmse_mean_dbh<-rmse_mean_dbh[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais3<-dcast(mean_coef_dbh,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Effet direct env sur DBHqm
+mean_coef_wdba<-fread("mean_coef_wdba_ba.csv")
+rmse_mean_wdba<-fread("rmse_mean_wdba_ba.csv")
+rmse_mean_wdba<-rmse_mean_wdba[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais2bis<-dcast(mean_coef_wdba,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet direct attributs sur AGB
+mean_coef_agb<-fread("mean_coef_agb.csv")
+rmse_mean_agb<-fread("rmse_mean_agb.csv")
+rmse_mean_agb<-rmse_mean_agb[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais4<-dcast(mean_coef_agb,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Effet direct attributs sur AGB
+mean_coef_agb_all<-fread("mean_coef_agb_all.csv")
+rmse_mean_agb_all<-fread("rmse_mean_agb_all.csv")
+rmse_mean_agb_all<-rmse_mean_agb_all[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais4bis<-dcast(mean_coef_agb_all,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet total attributs sur AGB
+mean_coef_agb_sd<-fread("mean_coef_agb_sd.csv")
+rmse_mean_agb_sd<-fread("rmse_mean_agb_sd.csv")
+rmse_mean_agb_sd<-rmse_mean_agb_sd[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais5<-dcast(mean_coef_agb_sd,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_dbh_sd<-fread("mean_coef_agb_dbh_sd.csv")
+rmse_mean_agb_dbh_sd<-fread("rmse_mean_agb_dbh_sd.csv")
+rmse_mean_agb_dbh_sd<-rmse_mean_agb_dbh_sd[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais6<-dcast(mean_coef_agb_dbh_sd,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_wdba<-fread("mean_coef_agb_wdba.csv")
+rmse_mean_agb_wdba<-fread("rmse_mean_agb_wdba.csv")
+rmse_mean_agb_wdba<-rmse_mean_agb_wdba[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais7<-dcast(mean_coef_agb_wdba,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+##Africa avec Proportion####################################################################################################################################################
+
+#Tableau,pour tous les continents, toutes les variables réponse, effet total env sur chaque variable réponse (attributs et AGBs)
+mean_coef_all_all_af<-fread("mean_coef_all_all_af.csv")
+rmse_mean_all_all_af<-fread("rmse_mean_all_all_af.csv")
+rmse_mean_all_all_af<-rmse_mean_all_all_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais_af<-dcast(mean_coef_all_all_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet direct Env sur BA
+mean_coef_ba_af<-fread("mean_coef_ba_dbh_sd_af.csv")
+rmse_mean_ba_af<-fread("rmse_mean_ba_dbh_sd_af.csv")
+rmse_mean_ba_af<-rmse_mean_ba_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais2_af<-dcast(mean_coef_ba_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet direct env sur DBHqm
+mean_coef_dbh_af<-fread("mean_coef_dbh_sd_af.csv")
+rmse_mean_dbh_af<-fread("rmse_mean_dbh_sd_af.csv")
+rmse_mean_dbh_af<-rmse_mean_dbh_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais3_af<-dcast(mean_coef_dbh_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Effet direct env sur DBHqm
+mean_coef_wdba_af<-fread("mean_coef_wdba_ba_af.csv")
+rmse_mean_wdba_af<-fread("rmse_mean_wdba_ba_af.csv")
+rmse_mean_wdba_af<-rmse_mean_wdba_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais2bis_af<-dcast(mean_coef_wdba_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Effet direct attributs sur AGB
+mean_coef_agb_af<-fread("mean_coef_agb_af.csv")
+rmse_mean_agb_af<-fread("rmse_mean_agb_af.csv")
+rmse_mean_agb_af<-rmse_mean_agb_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais4_af<-dcast(mean_coef_agb_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Effet direct attributs sur AGB
+mean_coef_agb_all_af<-fread("mean_coef_agb_all_af.csv")
+rmse_mean_agb_all_af<-fread("rmse_mean_agb_all_af.csv")
+rmse_mean_agb_all_af<-rmse_mean_agb_all_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais4bis_af<-dcast(mean_coef_agb_all_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet total attributs sur AGB
+mean_coef_agb_sd_af<-fread("mean_coef_agb_sd_af.csv")
+rmse_mean_agb_sd_af<-fread("rmse_mean_agb_sd_af.csv")
+rmse_mean_agb_sd_af<-rmse_mean_agb_sd_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais5_af<-dcast(mean_coef_agb_sd_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_dbh_sd_af<-fread("mean_coef_agb_dbh_sd_af.csv")
+rmse_mean_agb_dbh_sd_af<-fread("rmse_mean_agb_dbh_sd_af.csv")
+rmse_mean_agb_dbh_sd_af<-rmse_mean_agb_dbh_sd_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais6_af<-dcast(mean_coef_agb_dbh_sd_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_wdba_af<-fread("mean_coef_agb_wdba_af.csv")
+rmse_mean_agb_wdba_af<-fread("rmse_mean_agb_wdba_af.csv")
+rmse_mean_agb_wdba_af<-rmse_mean_agb_wdba_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais7_af<-dcast(mean_coef_agb_wdba_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_prop_af<-fread("mean_coef_agb_prop_af.csv")
+rmse_mean_agb_prop_af<-fread("rmse_mean_agb_prop_af.csv")
+rmse_mean_agb_prop_af<-rmse_mean_agb_prop_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais8_af<-dcast(mean_coef_agb_prop_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#############################################################################################################################################################################
+
+essais[,unique(area)]
+essais[area=="north America",area:="north_america"]
+essais[area=="Oceania",area:="oceania"]
+
+essais2[,unique(area)]
+essais2[area=="North America",area:="north_america"]
+essais2[area=="Oceania",area:="oceania"]
+
+essais2bis[,unique(area)]
+essais2bis[area=="North America",area:="north_america"]
+essais2bis[area=="Oceania",area:="oceania"]
+
+essais3[,unique(area)]
+essais3[area=="North America",area:="north_america"]
+essais3[area=="Oceania",area:="oceania"]
+
+
+essais4[,unique(area)]
+essais4[area=="North America",area:="north_america"]
+essais4[area=="Oceania",area:="oceania"]
+
+essais4bis[,unique(area)]
+essais4bis[area=="North America",area:="north_america"]
+essais4bis[area=="Oceania",area:="oceania"]
+
+
+essais5[,unique(area)]
+essais5[area=="North America",area:="north_america"]
+essais5[area=="Oceania",area:="oceania"]
+
+essais6[,unique(area)]
+essais6[area=="North America",area:="north_america"]
+essais6[area=="Oceania",area:="oceania"]
+
+essais7[,unique(area)]
+essais7[area=="North America",area:="north_america"]
+essais7[area=="Oceania",area:="oceania"]
+
+rmse_mean_agb_all[area=="North America",area:="north_america"]
+rmse_mean_agb_all_af[area=="North America",area:="north_america"]
+rmse_mean_agb[area=="North America",area:="north_america"]
+rmse_mean_agb_af[area=="North America",area:="north_america"]
+rmse_mean_agb_dbh_sd[area=="North America",area:="north_america"]
+rmse_mean_agb_dbh_sd_af[area=="North America",area:="north_america"]
+rmse_mean_agb_sd[area=="North America",area:="north_america"]
+rmse_mean_agb_sd_af[area=="North America",area:="north_america"]
+rmse_mean_all_all[area=="north America",area:="north_america"]
+rmse_mean_all_all_af[area=="North America",area:="north_america"]
+rmse_mean_ba[area=="North America",area:="north_america"]
+rmse_mean_ba_af[area=="North America",area:="north_america"]
+rmse_mean_dbh[area=="North America",area:="north_america"]
+rmse_mean_dbh_af[area=="North America",area:="north_america"]
+rmse_mean_wdba[area=="North America",area:="north_america"]
+rmse_mean_wdba_af[area=="North America",area:="north_america"]
+rmse_mean_agb_wdba[area=="North America",area:="north_america"]
+rmse_mean_agb_wdba_af[area=="North America",area:="north_america"]
+
+rmse_mean_agb_all[area=="Oceania",area:="oceania"]
+rmse_mean_agb_all_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb[area=="Oceania",area:="oceania"]
+rmse_mean_agb_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb_dbh_sd[area=="Oceania",area:="oceania"]
+rmse_mean_agb_dbh_sd_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb_sd[area=="Oceania",area:="oceania"]
+rmse_mean_agb_sd_af[area=="Oceania",area:="oceania"]
+rmse_mean_all_all[area=="Oceania",area:="oceania"]
+rmse_mean_all_all_af[area=="Oceania",area:="oceania"]
+rmse_mean_ba[area=="Oceania",area:="oceania"]
+rmse_mean_ba_af[area=="Oceania",area:="oceania"]
+rmse_mean_dbh[area=="Oceania",area:="oceania"]
+rmse_mean_dbh_af[area=="Oceania",area:="oceania"]
+rmse_mean_wdba[area=="Oceania",area:="oceania"]
+rmse_mean_wdba_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb_wdba[area=="Oceania",area:="oceania"]
+rmse_mean_agb_wdba_af[area=="Oceania",area:="oceania"]
+
+rmse_mean_agb_all[,unique(area)]
+rmse_mean_agb_all_af[,unique(area)]
+rmse_mean_agb[,unique(area)]
+rmse_mean_agb_af[,unique(area)]
+rmse_mean_agb_dbh_sd[,unique(area)]
+rmse_mean_agb_dbh_sd_af[,unique(area)]
+rmse_mean_agb_sd[,unique(area)]
+rmse_mean_agb_sd_af[,unique(area)]
+rmse_mean_all_all[,unique(area)]
+rmse_mean_all_all_af[,unique(area)]
+rmse_mean_ba[,unique(area)]
+rmse_mean_ba_af[,unique(area)]
+rmse_mean_dbh[,unique(area)]
+rmse_mean_dbh_af[,unique(area)]
+rmse_mean_wdba[,unique(area)]
+rmse_mean_wdba_af[,unique(area)]
+rmse_mean_agb_wdba[,unique(area)]
+rmse_mean_agb_wdba_af[,unique(area)]
+
+essais_af[,unique(area)]
+essais2_af[,unique(area)]
+essais3_af[,unique(area)]
+essais2_af[,unique(area)]
+essais5_af[,unique(area)]
+essais6_af[,unique(area)]
+essais7_af[,unique(area)]
+essais2bis_af[,unique(area)]
+essais4bis_af[,unique(area)]
+
+essais[,unique(area)]
+essais2[,unique(area)]
+essais3[,unique(area)]
+essais4[,unique(area)]
+essais5[,unique(area)]
+essais6[,unique(area)]
+essais7[,unique(area)]
+essais2bis[,unique(area)]
+essais4bis[,unique(area)]
+```
+###Oceania
+
+```{r }
+brut<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+brut<-brut[!elevation.y>=1000]
+mean_ba<-brut[Continent=="Oceania"][!is.na(BA),mean(BA)]
+sd_ba<-brut[Continent=="Oceania"][!is.na(BA),sd(BA)]
+
+mean_dbh<-brut[Continent=="Oceania"][!is.na(DBHqm),mean(DBHqm)]
+sd_dbh<-brut[Continent=="Oceania"][!is.na(DBHqm),sd(DBHqm)]
+
+mean_sd<-brut[Continent=="Oceania"][!is.na(SD),mean(SD)]
+sd_sd<-brut[Continent=="Oceania"][!is.na(SD),sd(SD)]
+
+mean_wd<-brut[Continent=="Oceania"][!is.na(WDba),mean(WDba)]
+sd_wd<-brut[Continent=="Oceania"][!is.na(WDba),sd(WDba)]
+
+mean_agb<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd_agb<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+mean_agbcont<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd_agbcont<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+mean_agbreg<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd_agbreg<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+
+a<-essais2[area=="oceania",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+b<-essais3[area=="oceania",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+c<-essais2bis[area=="oceania",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+d<-essais[area=="oceania",.(from=var,to=sub_rep,coef=estimate)][to=="SD"]#j'ai toutes els directes vers attributs et entre ttributs
+e<-essais4[area=="oceania",.(from=var,to=sub_rep,coef=estimate)][from=="DBHqm"]#DBHqm et SD sur AGB
+h<-essais4[area=="oceania",.(from=var,to=sub_rep,coef=estimate)][from=="SD"]#DBHqm et SD sur AGB
+g<-essais4bis[area=="oceania",.(from=var,to=sub_rep,coef=estimate)][!from=="DBHqm"&!from=="SD"&!from=="WDba"]#BA et env sur AGB
+f<-essais7[area=="oceania",.(from=var,to=sub_rep,coef=estimate)][from=="WDba"]
+
+
+edges<-rbind(a,b,c,d,e,f,g,h)
+edges[to=="DBH_qm",to:="DBHqm"]
+
+#je standardise les coefs (en ecart type et en %)
+edges[to=="BA",coef_sd:=coef/sd_ba]
+edges[to=="BA",coef_pourc:=(coef/mean_ba)*100]
+
+edges[to=="SD",coef_sd:=coef/sd_sd]
+edges[to=="SD",coef_pourc:=(coef/mean_sd)*100]
+
+edges[to=="DBHqm",coef_sd:=coef/sd_dbh]
+edges[to=="DBHqm",coef_pourc:=(coef/mean_dbh)*100]
+
+
+edges[to=="WDba",coef_sd:=coef/sd_wd]
+edges[to=="WDba",coef_pourc:=(coef/mean_wd)*100]
+
+
+edges[to=="AGB_Feld_Pan",coef_sd:=coef/sd_agb]
+edges[to=="AGB_Feld_Pan",coef_pourc:=(coef/mean_agb)*100]
+
+
+edges[to=="AGB_Feld_Reg",coef_sd:=coef/sd_agbreg]
+edges[to=="AGB_Feld_Reg",coef_pourc:=(coef/mean_agbreg)*100]
+
+
+edges[to=="AGB_Feld_Cont",coef_sd:=coef/sd_agbcont]
+edges[to=="AGB_Feld_Cont",coef_pourc:=(coef/mean_agbcont)*100]
+
+edges_brut<-edges
+edges_brut2<-edges
+data2<-edges_brut2[,area:="Oceania"]
+
+###coef non stand
+
+sd_bio1<-brut[Continent=="Oceania"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd_bio1[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio1<-sd_bio1[,sd(row_mean)]
+data2[from=="bio1"&area=="Oceania",coef_brut:=(coef/sd_bio1)]
+
+sd_bio12<-brut[Continent=="Oceania"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd_bio12[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio12<-sd_bio12[,sd(row_mean)]
+data2[from=="bio12"&area=="Oceania",coef_brut:=(coef/sd_bio12)]
+
+sd_bio15<-brut[Continent=="Oceania"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd_bio15[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio15<-sd_bio15[,sd(row_mean)]
+data2[from=="bio15"&area=="Oceania",coef_brut:=(coef/sd_bio15)]
+
+sd<-brut[Continent=="Oceania",sd(slope)]
+data2[from=="slope"&area=="Oceania",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Oceania",sd(sand)]
+data2[from=="sand"&area=="Oceania",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Oceania",sd(org)]
+data2[from=="org"&area=="Oceania",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Oceania",sd(ph)]
+data2[from=="ph"&area=="Oceania",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Oceania",sd(DBHqm)]
+data2[from=="DBHqm"&area=="Oceania",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Oceania",sd(SD)]
+data2[from=="SD"&area=="Oceania",coef_brut:=(coef/sd)]
+
+
+sd<-brut[Continent=="Oceania",sd(BA)]
+data2[from=="BA"&area=="Oceania",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Oceania",sd(WDba)]
+data2[from=="WDba"&area=="Oceania",coef_brut:=(coef/sd)]
+
+```
+
+
+```{r }
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+#Oceania
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+
+
+###################################################################################################################################
+###################################################################################################################################
+##AGB_Feld_pan
+###################################################################################################################################
+###################################################################################################################################
+edges<-edges_brut[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"]
+# Harmonisation des noms
+edges[from=="bio1",from:="MAT"]
+edges[from=="bio12",from:="TAP"]
+edges[from=="bio15",from:="PS"]
+edges[from=="ph",from:="pH"]
+edges[from=="sand",from:="Sand "]
+edges[from=="org",from:="Org. C "]
+edges[from=="slope",from:="Slope"]
+edges[from=="AGB_Feld_Pan",from:="AGB"]
+edges[to=="AGB_Feld_Pan",to:="AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp)
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]               <- c(0, 2.7)
+layout_mat["TAP", ]               <- c(0, 2.5)
+layout_mat["PS", ]                <- c(0, 2.3)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]                <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]             <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3,y_agb + 0.2 )
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all[area=="oceania"&sub_rep=="WDba",rmse][[1]],
+  BA    = rmse_mean_ba[area=="oceania"&sub_rep=="BA",rmse][[1]],
+  SD    = rmse_mean_all_all[area=="oceania"&sub_rep=="SD",rmse][[1]],
+  DBHqm = rmse_mean_dbh[area=="oceania"&sub_rep=="DBH_qm",rmse][[1]],
+  AGB   = rmse_mean_agb_all[area=="oceania"&sub_rep=="AGB_Feld_Pan",rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all[area=="oceania" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba[area=="oceania" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all[area=="oceania" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh[area=="oceania" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all[area=="oceania" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_sd))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_sd
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 0.1   ~ "< 0.1",
+  abs(E(graph)$weight) < 0.25  ~ "0.1 ≤ coef < 0.25",
+  abs(E(graph)$weight) < 0.5   ~ "0.25 ≤ coef < 0.5",
+  abs(E(graph)$weight) < 0.75  ~ "0.5 ≤ coef < 0.75",
+  TRUE                         ~ "coef ≥ 0.75"
+)
+
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+one<-ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+    values = c("< 0.1" = 0.5, "0.1 ≤ coef < 0.25" = 1, "0.25 ≤ coef < 0.5" = 1.5, "0.5 ≤ coef < 0.75" = 2, "coef ≥ 0.75" = 2.5),
+    name = "Standardized coefficient (sd)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("Oceania") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+one
+
+
+
+##################################################################################################################################
+#Pourc
+#################################################################################################################################
+edges<-edges_brut[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"]
+# Harmonisation des noms
+edges[from=="bio1",from:="MAT"]
+edges[from=="bio12",from:="TAP"]
+edges[from=="bio15",from:="PS"]
+edges[from=="ph",from:="pH"]
+edges[from=="sand",from:="Sand "]
+edges[from=="org",from:="Org. C "]
+edges[from=="slope",from:="Slope"]
+edges[from=="AGB_Feld_Pan",from:="AGB"]
+edges[to=="AGB_Feld_Pan",to:="AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp)
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]               <- c(0, 2.7)
+layout_mat["TAP", ]               <- c(0, 2.5)
+layout_mat["PS", ]                <- c(0, 2.3)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]                <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]             <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3,y_agb + 0.2 )
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all[area=="oceania"&sub_rep=="WDba",rmse][[1]],
+  BA    = rmse_mean_ba[area=="oceania"&sub_rep=="BA",rmse][[1]],
+  SD    = rmse_mean_all_all[area=="oceania"&sub_rep=="SD",rmse][[1]],
+  DBHqm = rmse_mean_dbh[area=="oceania"&sub_rep=="DBH_qm",rmse][[1]],
+  AGB   = rmse_mean_agb_all[area=="oceania"&sub_rep=="AGB_Feld_Pan",rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all[area=="oceania" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba[area=="oceania" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all[area=="oceania" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh[area=="oceania" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all[area=="oceania" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_pourc))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_pourc
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 1   ~ "< 1",
+  abs(E(graph)$weight) < 5  ~ "1 ≤ coef < 5",
+  abs(E(graph)$weight) < 10   ~ "5 ≤ coef < 10",
+  abs(E(graph)$weight) < 20  ~ "10 ≤ coef < 20",
+  TRUE                         ~ "coef ≥ 20"
+)
+E(graph)$edge_width <- factor(E(graph)$edge_width,
+                              levels = c("< 1",
+                                         "1 ≤ coef < 5",
+                                         "5 ≤ coef < 10",
+                                         "10 ≤ coef < 20",
+                                         "coef ≥ 20"))
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+two<-ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+     values = c("< 1" = 0.5, "1 ≤ coef < 5" = 1, "5 ≤ coef < 10" = 1.5, "10 ≤ coef < 20" = 2, "coef ≥ 20" = 2.5),
+    name = "Standardized coefficient (%)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("Oceania") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+
+two
+
+
+
+```
+
+###North America
+```{r }
+brut<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+brut<-brut[!elevation.y>=1000]
+mean_ba<-brut[Continent=="North America"][!is.na(BA),mean(BA)]
+sd_ba<-brut[Continent=="North America"][!is.na(BA),sd(BA)]
+
+mean_dbh<-brut[Continent=="North America"][!is.na(DBHqm),mean(DBHqm)]
+sd_dbh<-brut[Continent=="North America"][!is.na(DBHqm),sd(DBHqm)]
+
+mean_sd<-brut[Continent=="North America"][!is.na(SD),mean(SD)]
+sd_sd<-brut[Continent=="North America"][!is.na(SD),sd(SD)]
+
+mean_wd<-brut[Continent=="North America"][!is.na(WDba),mean(WDba)]
+sd_wd<-brut[Continent=="North America"][!is.na(WDba),sd(WDba)]
+
+mean_agb<-brut[Continent=="North America"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd_agb<-brut[Continent=="North America"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+mean_agbcont<-brut[Continent=="North America"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd_agbcont<-brut[Continent=="North America"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+mean_agbreg<-brut[Continent=="North America"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd_agbreg<-brut[Continent=="North America"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+
+a<-essais2[area=="north_america",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+b<-essais3[area=="north_america",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+c<-essais2bis[area=="north_america",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+d<-essais[area=="north_america",.(from=var,to=sub_rep,coef=estimate)][to=="SD"]#j'ai toutes els directes vers attributs et entre ttributs
+e<-essais4[area=="north_america",.(from=var,to=sub_rep,coef=estimate)][from=="DBHqm"]#DBHqm et SD sur AGB
+h<-essais4[area=="north_america",.(from=var,to=sub_rep,coef=estimate)][from=="SD"]#DBHqm et SD sur AGB
+g<-essais4bis[area=="north_america",.(from=var,to=sub_rep,coef=estimate)][!from=="DBHqm"&!from=="SD"&!from=="WDba"]#BA et env sur AGB
+f<-essais7[area=="north_america",.(from=var,to=sub_rep,coef=estimate)][from=="WDba"]
+
+
+edges<-rbind(a,b,c,d,e,f,g,h)
+edges[to=="DBH_qm",to:="DBHqm"]
+
+#je standardise les coefs (en ecart type et en %)
+edges[to=="BA",coef_sd:=coef/sd_ba]
+edges[to=="BA",coef_pourc:=(coef/mean_ba)*100]
+
+edges[to=="SD",coef_sd:=coef/sd_sd]
+edges[to=="SD",coef_pourc:=(coef/mean_sd)*100]
+
+edges[to=="DBHqm",coef_sd:=coef/sd_dbh]
+edges[to=="DBHqm",coef_pourc:=(coef/mean_dbh)*100]
+
+
+edges[to=="WDba",coef_sd:=coef/sd_wd]
+edges[to=="WDba",coef_pourc:=(coef/mean_wd)*100]
+
+
+edges[to=="AGB_Feld_Pan",coef_sd:=coef/sd_agb]
+edges[to=="AGB_Feld_Pan",coef_pourc:=(coef/mean_agb)*100]
+
+
+edges[to=="AGB_Feld_Reg",coef_sd:=coef/sd_agbreg]
+edges[to=="AGB_Feld_Reg",coef_pourc:=(coef/mean_agbreg)*100]
+
+
+edges[to=="AGB_Feld_Cont",coef_sd:=coef/sd_agbcont]
+edges[to=="AGB_Feld_Cont",coef_pourc:=(coef/mean_agbcont)*100]
+
+edges_brut<-edges
+edges_brut2<-edges
+data<-edges_brut2[,area:="North America"]
+data[,coef_brut:=NA]
+data2<-rbind(data2,data)
+
+###coef non stand
+
+sd_bio1<-brut[Continent=="North America"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd_bio1[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio1<-sd_bio1[,sd(row_mean)]
+data2[from=="bio1"&area=="North America",coef_brut:=(coef/sd_bio1)]
+
+sd_bio12<-brut[Continent=="North America"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd_bio12[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio12<-sd_bio12[,sd(row_mean)]
+data2[from=="bio12"&area=="North America",coef_brut:=(coef/sd_bio12)]
+
+sd_bio15<-brut[Continent=="North America"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd_bio15[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio15<-sd_bio15[,sd(row_mean)]
+data2[from=="bio15"&area=="North America",coef_brut:=(coef/sd_bio15)]
+
+sd<-brut[Continent=="North America",sd(slope)]
+data2[from=="slope"&area=="North America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="North America",sd(sand)]
+data2[from=="sand"&area=="North America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="North America",sd(org)]
+data2[from=="org"&area=="North America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="North America",sd(ph)]
+data2[from=="ph"&area=="North America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="North America",sd(DBHqm)]
+data2[from=="DBHqm"&area=="North America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="North America",sd(SD)]
+data2[from=="SD"&area=="North America",coef_brut:=(coef/sd)]
+
+
+sd<-brut[Continent=="North America",sd(BA)]
+data2[from=="BA"&area=="North America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="North America",sd(WDba)]
+data2[from=="WDba"&area=="North America",coef_brut:=(coef/sd)]
+```
+
+
+```{r }
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+#North America
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+
+
+###################################################################################################################################
+###################################################################################################################################
+##AGB_Feld_pan
+###################################################################################################################################
+###################################################################################################################################
+edges<-edges_brut[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"]
+# Harmonisation des noms
+edges[from=="bio1",from:="MAT"]
+edges[from=="bio12",from:="TAP"]
+edges[from=="bio15",from:="PS"]
+edges[from=="ph",from:="pH"]
+edges[from=="sand",from:="Sand "]
+edges[from=="org",from:="Org. C "]
+edges[from=="slope",from:="Slope"]
+edges[from=="AGB_Feld_Pan",from:="AGB"]
+edges[to=="AGB_Feld_Pan",to:="AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp)
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]               <- c(0, 2.7)
+layout_mat["TAP", ]               <- c(0, 2.5)
+layout_mat["PS", ]                <- c(0, 2.3)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]                <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]             <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3,y_agb + 0.2 )
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all[area=="north_america"&sub_rep=="WDba",rmse][[1]],
+  BA    = rmse_mean_ba[area=="north_america"&sub_rep=="BA",rmse][[1]],
+  SD    = rmse_mean_all_all[area=="north_america"&sub_rep=="SD",rmse][[1]],
+  DBHqm = rmse_mean_dbh[area=="north_america"&sub_rep=="DBH_qm",rmse][[1]],
+  AGB   = rmse_mean_agb_all[area=="north_america"&sub_rep=="AGB_Feld_Pan",rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all[area=="north_america" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba[area=="north_america" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all[area=="north_america" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh[area=="north_america" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all[area=="north_america" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_sd))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_sd
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 0.1   ~ "< 0.1",
+  abs(E(graph)$weight) < 0.25  ~ "0.1 ≤ coef < 0.25",
+  abs(E(graph)$weight) < 0.5   ~ "0.25 ≤ coef < 0.5",
+  abs(E(graph)$weight) < 0.75  ~ "0.5 ≤ coef < 0.75",
+  TRUE                         ~ "coef ≥ 0.75"
+)
+
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+three<-ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+    values = c("< 0.1" = 0.5, "0.1 ≤ coef < 0.25" = 1, "0.25 ≤ coef < 0.5" = 1.5, "0.5 ≤ coef < 0.75" = 2, "coef ≥ 0.75" = 2.5),
+    name = "Standardized coefficient (sd)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +  # 🔧 Ajuste ici selon ton layout
+  theme_void() +
+  ggtitle("Central America") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+three
+
+
+
+##################################################################################################################################
+#Pourc
+#################################################################################################################################
+
+################################################################################################################################### 
+edges<-edges_brut[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"] 
+# Harmonisation des noms
+edges[from=="bio1",from:="MAT"]
+edges[from=="bio12",from:="TAP"]
+edges[from=="bio15",from:="PS"]
+edges[from=="ph",from:="pH"]
+edges[from=="sand",from:="Sand "]
+edges[from=="org",from:="Org. C "]
+edges[from=="slope",from:="Slope"]
+edges[from=="AGB_Feld_Pan",from:="AGB"]
+edges[to=="AGB_Feld_Pan",to:="AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp)
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]               <- c(0, 2.7)
+layout_mat["TAP", ]               <- c(0, 2.5)
+layout_mat["PS", ]                <- c(0, 2.3)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]                <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]             <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3,y_agb + 0.2 )
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all[area=="north_america"&sub_rep=="WDba",rmse][[1]],
+  BA    = rmse_mean_ba[area=="north_america"&sub_rep=="BA",rmse][[1]],
+  SD    = rmse_mean_all_all[area=="north_america"&sub_rep=="SD",rmse][[1]],
+  DBHqm = rmse_mean_dbh[area=="north_america"&sub_rep=="DBH_qm",rmse][[1]],
+  AGB   = rmse_mean_agb_all[area=="north_america"&sub_rep=="AGB_Feld_Pan",rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all[area=="north_america" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba[area=="north_america" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all[area=="north_america" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh[area=="north_america" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all[area=="north_america" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_pourc))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_pourc
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 1   ~ "< 1",
+  abs(E(graph)$weight) < 5  ~ "1 ≤ coef < 5",
+  abs(E(graph)$weight) < 10   ~ "5 ≤ coef < 10",
+  abs(E(graph)$weight) < 20  ~ "10 ≤ coef < 20",
+  TRUE                         ~ "coef ≥ 20"
+)
+E(graph)$edge_width <- factor(E(graph)$edge_width,
+                              levels = c("< 1",
+                                         "1 ≤ coef < 5",
+                                         "5 ≤ coef < 10",
+                                         "10 ≤ coef < 20",
+                                         "coef ≥ 20"))
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+four<-ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+      values = c("< 1" = 0.5, "1 ≤ coef < 5" = 1, "5 ≤ coef < 10" = 1.5, "10 ≤ coef < 20" = 2, "coef ≥ 20" = 2.5),
+    name = "Standardized coefficient (%)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +  # 🔧 Ajuste ici selon ton layout
+  theme_void() +
+  ggtitle("Central America") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+four
+
+
+```
+
+###South America
+```{r }
+brut<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+brut<-brut[!elevation.y>=1000]
+mean_ba<-brut[Continent=="South America"][!is.na(BA),mean(BA)]
+sd_ba<-brut[Continent=="South America"][!is.na(BA),sd(BA)]
+
+mean_dbh<-brut[Continent=="South America"][!is.na(DBHqm),mean(DBHqm)]
+sd_dbh<-brut[Continent=="South America"][!is.na(DBHqm),sd(DBHqm)]
+
+mean_sd<-brut[Continent=="South America"][!is.na(SD),mean(SD)]
+sd_sd<-brut[Continent=="South America"][!is.na(SD),sd(SD)]
+
+mean_wd<-brut[Continent=="South America"][!is.na(WDba),mean(WDba)]
+sd_wd<-brut[Continent=="South America"][!is.na(WDba),sd(WDba)]
+
+mean_agb<-brut[Continent=="South America"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd_agb<-brut[Continent=="South America"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+mean_agbcont<-brut[Continent=="South America"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd_agbcont<-brut[Continent=="South America"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+mean_agbreg<-brut[Continent=="South America"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd_agbreg<-brut[Continent=="South America"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+
+
+a<-essais2[area=="south_america",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+b<-essais3[area=="south_america",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+c<-essais2bis[area=="south_america",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+d<-essais[area=="south_america",.(from=var,to=sub_rep,coef=estimate)][to=="SD"]#j'ai toutes els directes vers attributs et entre ttributs
+e<-essais4[area=="south_america",.(from=var,to=sub_rep,coef=estimate)][from=="DBHqm"]#DBHqm et SD sur AGB
+h<-essais4[area=="south_america",.(from=var,to=sub_rep,coef=estimate)][from=="SD"]#DBHqm et SD sur AGB
+g<-essais4bis[area=="south_america",.(from=var,to=sub_rep,coef=estimate)][!from=="DBHqm"&!from=="SD"&!from=="WDba"]#BA et env sur AGB
+f<-essais7[area=="south_america",.(from=var,to=sub_rep,coef=estimate)][from=="WDba"]
+
+edges<-rbind(a,b,c,d,e,f,g,h)
+edges[to=="DBH_qm",to:="DBHqm"]
+
+#je standardise les coefs (en ecart type et en %)
+edges[to=="BA",coef_sd:=coef/sd_ba]
+edges[to=="BA",coef_pourc:=(coef/mean_ba)*100]
+
+edges[to=="SD",coef_sd:=coef/sd_sd]
+edges[to=="SD",coef_pourc:=(coef/mean_sd)*100]
+
+edges[to=="DBHqm",coef_sd:=coef/sd_dbh]
+edges[to=="DBHqm",coef_pourc:=(coef/mean_dbh)*100]
+
+
+edges[to=="WDba",coef_sd:=coef/sd_wd]
+edges[to=="WDba",coef_pourc:=(coef/mean_wd)*100]
+
+
+edges[to=="AGB_Feld_Pan",coef_sd:=coef/sd_agb]
+edges[to=="AGB_Feld_Pan",coef_pourc:=(coef/mean_agb)*100]
+
+
+edges[to=="AGB_Feld_Reg",coef_sd:=coef/sd_agbreg]
+edges[to=="AGB_Feld_Reg",coef_pourc:=(coef/mean_agbreg)*100]
+
+
+edges[to=="AGB_Feld_Cont",coef_sd:=coef/sd_agbcont]
+edges[to=="AGB_Feld_Cont",coef_pourc:=(coef/mean_agbcont)*100]
+
+edges_brut<-edges
+edges_brut2<-edges
+data<-edges_brut2[,area:="South America"]
+data[,coef_brut:=NA]
+data2<-rbind(data2,data)
+
+###coef non stand
+
+sd_bio1<-brut[Continent=="South America"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd_bio1[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio1<-sd_bio1[,sd(row_mean)]
+data2[from=="bio1"&area=="South America",coef_brut:=(coef/sd_bio1)]
+
+sd_bio12<-brut[Continent=="South America"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd_bio12[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio12<-sd_bio12[,sd(row_mean)]
+data2[from=="bio12"&area=="South America",coef_brut:=(coef/sd_bio12)]
+
+sd_bio15<-brut[Continent=="South America"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd_bio15[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio15<-sd_bio15[,sd(row_mean)]
+data2[from=="bio15"&area=="South America",coef_brut:=(coef/sd_bio15)]
+
+sd<-brut[Continent=="South America",sd(slope)]
+data2[from=="slope"&area=="South America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="South America",sd(sand)]
+data2[from=="sand"&area=="South America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="South America",sd(org)]
+data2[from=="org"&area=="South America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="South America",sd(ph)]
+data2[from=="ph"&area=="South America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="South America",sd(DBHqm)]
+data2[from=="DBHqm"&area=="South America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="South America",sd(SD)]
+data2[from=="SD"&area=="South America",coef_brut:=(coef/sd)]
+
+
+sd<-brut[Continent=="South America",sd(BA)]
+data2[from=="BA"&area=="South America",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="South America",sd(WDba)]
+data2[from=="WDba"&area=="South America",coef_brut:=(coef/sd)]
+```
+
+
+```{r }
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+#South America
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+
+
+###################################################################################################################################
+###################################################################################################################################
+##AGB_Feld_pan
+###################################################################################################################################
+###################################################################################################################################
+################################################################################################################################### 
+edges<-edges_brut[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"] 
+# Harmonisation des noms
+edges[from=="bio1",from:="MAT"]
+edges[from=="bio12",from:="TAP"]
+edges[from=="bio15",from:="PS"]
+edges[from=="ph",from:="pH"]
+edges[from=="sand",from:="Sand "]
+edges[from=="org",from:="Org. C "]
+edges[from=="slope",from:="Slope"]
+edges[from=="AGB_Feld_Pan",from:="AGB"]
+edges[to=="AGB_Feld_Pan",to:="AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp)
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]               <- c(0, 2.7)
+layout_mat["TAP", ]               <- c(0, 2.5)
+layout_mat["PS", ]                <- c(0, 2.3)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]                <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]             <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3,y_agb + 0.2 )
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all[area=="south_america"&sub_rep=="WDba",rmse][[1]],
+  BA    = rmse_mean_ba[area=="south_america"&sub_rep=="BA",rmse][[1]],
+  SD    = rmse_mean_all_all[area=="south_america"&sub_rep=="SD",rmse][[1]],
+  DBHqm = rmse_mean_dbh[area=="south_america"&sub_rep=="DBH_qm",rmse][[1]],
+  AGB   = rmse_mean_agb_all[area=="south_america"&sub_rep=="AGB_Feld_Pan",rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all[area=="south_america" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba[area=="south_america" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all[area=="south_america" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh[area=="south_america" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all[area=="south_america" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_sd))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_sd
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 0.1   ~ "< 0.1",
+  abs(E(graph)$weight) < 0.25  ~ "0.1 ≤ coef < 0.25",
+  abs(E(graph)$weight) < 0.5   ~ "0.25 ≤ coef < 0.5",
+  abs(E(graph)$weight) < 0.75  ~ "0.5 ≤ coef < 0.75",
+  TRUE                         ~ "coef ≥ 0.75"
+)
+
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+five<-ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+    values = c("< 0.1" = 0.5, "0.1 ≤ coef < 0.25" = 1, "0.25 ≤ coef < 0.5" = 1.5, "0.5 ≤ coef < 0.75" = 2, "coef ≥ 0.75" = 2.5),
+    name = "Standardized coefficient (sd)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("South America") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+five
+
+
+
+
+##################################################################################################################################
+#Pourc
+#################################################################################################################################
+
+################################################################################################################################### 
+edges<-edges_brut[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"] 
+# Harmonisation des noms
+edges[from=="bio1",from:="MAT"]
+edges[from=="bio12",from:="TAP"]
+edges[from=="bio15",from:="PS"]
+edges[from=="ph",from:="pH"]
+edges[from=="sand",from:="Sand "]
+edges[from=="org",from:="Org. C "]
+edges[from=="slope",from:="Slope"]
+edges[from=="AGB_Feld_Pan",from:="AGB"]
+edges[to=="AGB_Feld_Pan",to:="AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp)
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]               <- c(0, 2.7)
+layout_mat["TAP", ]               <- c(0, 2.5)
+layout_mat["PS", ]                <- c(0, 2.3)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]                <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]             <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3,y_agb + 0.2 )
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all[area=="south_america"&sub_rep=="WDba",rmse][[1]],
+  BA    = rmse_mean_ba[area=="south_america"&sub_rep=="BA",rmse][[1]],
+  SD    = rmse_mean_all_all[area=="south_america"&sub_rep=="SD",rmse][[1]],
+  DBHqm = rmse_mean_dbh[area=="south_america"&sub_rep=="DBH_qm",rmse][[1]],
+  AGB   = rmse_mean_agb_all[area=="south_america"&sub_rep=="AGB_Feld_Pan",rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all[area=="south_america" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba[area=="south_america" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all[area=="south_america" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh[area=="south_america" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all[area=="south_america" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_pourc))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_pourc
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 1   ~ "< 1",
+  abs(E(graph)$weight) < 5  ~ "1 ≤ coef < 5",
+  abs(E(graph)$weight) < 10   ~ "5 ≤ coef < 10",
+  abs(E(graph)$weight) < 20  ~ "10 ≤ coef < 20",
+  TRUE                         ~ "coef ≥ 20"
+)
+E(graph)$edge_width <- factor(E(graph)$edge_width,
+                              levels = c("< 1",
+                                         "1 ≤ coef < 5",
+                                         "5 ≤ coef < 10",
+                                         "10 ≤ coef < 20",
+                                         "coef ≥ 20"))
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+q<-ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+   values = c("< 1" = 0.5, "1 ≤ coef < 5" = 1, "5 ≤ coef < 10" = 1.5, "10 ≤ coef < 20" = 2, "coef ≥ 20" = 2.5),
+    name = "Standardized coefficient (%)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("South America") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+q
+
+
+
+
+```
+
+###Asia
+```{r }
+brut<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+brut<-brut[!elevation.y>=1000]
+mean_ba<-brut[Continent=="Eurasia"][!is.na(BA),mean(BA)]
+sd_ba<-brut[Continent=="Eurasia"][!is.na(BA),sd(BA)]
+
+mean_dbh<-brut[Continent=="Eurasia"][!is.na(DBHqm),mean(DBHqm)]
+sd_dbh<-brut[Continent=="Eurasia"][!is.na(DBHqm),sd(DBHqm)]
+
+mean_sd<-brut[Continent=="Eurasia"][!is.na(SD),mean(SD)]
+sd_sd<-brut[Continent=="Eurasia"][!is.na(SD),sd(SD)]
+
+mean_wd<-brut[Continent=="Eurasia"][!is.na(WDba),mean(WDba)]
+sd_wd<-brut[Continent=="Eurasia"][!is.na(WDba),sd(WDba)]
+
+mean_agb<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd_agb<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+mean_agbcont<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd_agbcont<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+mean_agbreg<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd_agbreg<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+
+a<-essais2[area=="asia",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+b<-essais3[area=="asia",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+c<-essais2bis[area=="asia",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+d<-essais[area=="asia",.(from=var,to=sub_rep,coef=estimate)][to=="SD"]#j'ai toutes els directes vers attributs et entre ttributs
+e<-essais4[area=="asia",.(from=var,to=sub_rep,coef=estimate)][from=="DBHqm"]#DBHqm et SD sur AGB
+h<-essais4[area=="asia",.(from=var,to=sub_rep,coef=estimate)][from=="SD"]#DBHqm et SD sur AGB
+g<-essais4bis[area=="asia",.(from=var,to=sub_rep,coef=estimate)][!from=="DBHqm"&!from=="SD"&!from=="WDba"]#BA et env sur AGB
+f<-essais7[area=="asia",.(from=var,to=sub_rep,coef=estimate)][from=="WDba"]
+
+edges<-rbind(a,b,c,d,e,f,g,h)
+edges[to=="DBH_qm",to:="DBHqm"]
+
+#je standardise les coefs (en ecart type et en %)
+edges[to=="BA",coef_sd:=coef/sd_ba]
+edges[to=="BA",coef_pourc:=(coef/mean_ba)*100]
+
+edges[to=="SD",coef_sd:=coef/sd_sd]
+edges[to=="SD",coef_pourc:=(coef/mean_sd)*100]
+
+edges[to=="DBHqm",coef_sd:=coef/sd_dbh]
+edges[to=="DBHqm",coef_pourc:=(coef/mean_dbh)*100]
+
+
+edges[to=="WDba",coef_sd:=coef/sd_wd]
+edges[to=="WDba",coef_pourc:=(coef/mean_wd)*100]
+
+
+edges[to=="AGB_Feld_Pan",coef_sd:=coef/sd_agb]
+edges[to=="AGB_Feld_Pan",coef_pourc:=(coef/mean_agb)*100]
+
+
+edges[to=="AGB_Feld_Reg",coef_sd:=coef/sd_agbreg]
+edges[to=="AGB_Feld_Reg",coef_pourc:=(coef/mean_agbreg)*100]
+
+
+edges[to=="AGB_Feld_Cont",coef_sd:=coef/sd_agbcont]
+edges[to=="AGB_Feld_Cont",coef_pourc:=(coef/mean_agbcont)*100]
+
+edges_brut<-edges
+edges_brut2<-edges
+data<-edges_brut2[,area:="Asia"]
+data[,coef_brut:=NA]
+data2<-rbind(data2,data)
+
+###coef non stand
+
+sd_bio1<-brut[Continent=="Eurasia"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd_bio1[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio1<-sd_bio1[,sd(row_mean)]
+data2[from=="bio1"&area=="Asia",coef_brut:=(coef/sd_bio1)]
+
+sd_bio12<-brut[Continent=="Eurasia"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd_bio12[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio12<-sd_bio12[,sd(row_mean)]
+data2[from=="bio12"&area=="Asia",coef_brut:=(coef/sd_bio12)]
+
+sd_bio15<-brut[Continent=="Eurasia"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd_bio15[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio15<-sd_bio15[,sd(row_mean)]
+data2[from=="bio15"&area=="Asia",coef_brut:=(coef/sd_bio15)]
+
+sd<-brut[Continent=="Eurasia",sd(slope)]
+data2[from=="slope"&area=="Asia",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Eurasia",sd(sand)]
+data2[from=="sand"&area=="Asia",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Eurasia",sd(org)]
+data2[from=="org"&area=="Asia",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Eurasia",sd(ph)]
+data2[from=="ph"&area=="Asia",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Eurasia",sd(DBHqm)]
+data2[from=="DBHqm"&area=="Asia",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Eurasia",sd(SD)]
+data2[from=="SD"&area=="Asia",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Eurasia",sd(BA)]
+data2[from=="BA"&area=="Asia",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Eurasia",sd(WDba)]
+data2[from=="WDba"&area=="Asia",coef_brut:=(coef/sd)]
+```
+
+
+```{r }
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+#Asia
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+
+
+###################################################################################################################################
+###################################################################################################################################
+##AGB_Feld_pan
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+edges<-edges_brut[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"] 
+# Harmonisation des noms
+edges[from=="bio1",from:="MAT"]
+edges[from=="bio12",from:="TAP"]
+edges[from=="bio15",from:="PS"]
+edges[from=="ph",from:="pH"]
+edges[from=="sand",from:="Sand "]
+edges[from=="org",from:="Org. C "]
+edges[from=="slope",from:="Slope"]
+edges[from=="AGB_Feld_Pan",from:="AGB"]
+edges[to=="AGB_Feld_Pan",to:="AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp)
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]               <- c(0, 2.7)
+layout_mat["TAP", ]               <- c(0, 2.5)
+layout_mat["PS", ]                <- c(0, 2.3)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]                <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]             <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3,y_agb + 0.2 )
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all[area=="asia"&sub_rep=="WDba",rmse][[1]],
+  BA    = rmse_mean_ba[area=="asia"&sub_rep=="BA",rmse][[1]],
+  SD    = rmse_mean_all_all[area=="asia"&sub_rep=="SD",rmse][[1]],
+  DBHqm = rmse_mean_dbh[area=="asia"&sub_rep=="DBH_qm",rmse][[1]],
+  AGB   = rmse_mean_agb_all[area=="asia"&sub_rep=="AGB_Feld_Pan",rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all[area=="asia" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba[area=="asia" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all[area=="asia" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh[area=="asia" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all[area=="asia" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_sd))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_sd
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 0.1   ~ "< 0.1",
+  abs(E(graph)$weight) < 0.25  ~ "0.1 ≤ coef < 0.25",
+  abs(E(graph)$weight) < 0.5   ~ "0.25 ≤ coef < 0.5",
+  abs(E(graph)$weight) < 0.75  ~ "0.5 ≤ coef < 0.75",
+  TRUE                         ~ "coef ≥ 0.75"
+)
+
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+o<-ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+    values = c("< 0.1" = 0.5, "0.1 ≤ coef < 0.25" = 1, "0.25 ≤ coef < 0.5" = 1.5, "0.5 ≤ coef < 0.75" = 2, "coef ≥ 0.75" = 2.5),
+    name = "Standardized coefficient (sd)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("Asia") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+o
+
+
+
+##################################################################################################################################
+#Pourc
+#################################################################################################################################
+
+################################################################################################################################### 
+edges<-edges_brut[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"] 
+# Harmonisation des noms
+edges[from=="bio1",from:="MAT"]
+edges[from=="bio12",from:="TAP"]
+edges[from=="bio15",from:="PS"]
+edges[from=="ph",from:="pH"]
+edges[from=="sand",from:="Sand "]
+edges[from=="org",from:="Org. C "]
+edges[from=="slope",from:="Slope"]
+edges[from=="AGB_Feld_Pan",from:="AGB"]
+edges[to=="AGB_Feld_Pan",to:="AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp)
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]               <- c(0, 2.7)
+layout_mat["TAP", ]               <- c(0, 2.5)
+layout_mat["PS", ]                <- c(0, 2.3)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]                <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]             <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3,y_agb + 0.2 )
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all[area=="asia"&sub_rep=="WDba",rmse][[1]],
+  BA    = rmse_mean_ba[area=="asia"&sub_rep=="BA",rmse][[1]],
+  SD    = rmse_mean_all_all[area=="asia"&sub_rep=="SD",rmse][[1]],
+  DBHqm = rmse_mean_dbh[area=="asia"&sub_rep=="DBH_qm",rmse][[1]],
+  AGB   = rmse_mean_agb_all[area=="asia"&sub_rep=="AGB_Feld_Pan",rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all[area=="asia" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba[area=="asia" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all[area=="asia" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh[area=="asia" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all[area=="asia" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_pourc))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_pourc
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 1   ~ "< 1",
+  abs(E(graph)$weight) < 5  ~ "1 ≤ coef < 5",
+  abs(E(graph)$weight) < 10   ~ "5 ≤ coef < 10",
+  abs(E(graph)$weight) < 20  ~ "10 ≤ coef < 20",
+  TRUE                         ~ "coef ≥ 20"
+)
+E(graph)$edge_width <- factor(E(graph)$edge_width,
+                              levels = c("< 1",
+                                         "1 ≤ coef < 5",
+                                         "5 ≤ coef < 10",
+                                         "10 ≤ coef < 20",
+                                         "coef ≥ 20"))
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+p<-ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+    values = c("< 1" = 0.5, "1 ≤ coef < 5" = 1, "5 ≤ coef < 10" = 1.5, "10 ≤ coef < 20" = 2, "coef ≥ 20" = 2.5),
+    name = "Standardized coefficient (%)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("Asia") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+p
+
+
+
+
+```
+
+###Africa
+```{r }
+brut<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+brut<-brut[!elevation.y>=1000]
+mean_ba<-brut[Continent=="Africa"][!is.na(BA),mean(BA)]
+sd_ba<-brut[Continent=="Africa"][!is.na(BA),sd(BA)]
+
+mean_dbh<-brut[Continent=="Africa"][!is.na(DBHqm),mean(DBHqm)]
+sd_dbh<-brut[Continent=="Africa"][!is.na(DBHqm),sd(DBHqm)]
+
+mean_sd<-brut[Continent=="Africa"][!is.na(SD),mean(SD)]
+sd_sd<-brut[Continent=="Africa"][!is.na(SD),sd(SD)]
+
+mean_wd<-brut[Continent=="Africa"][!is.na(WDba),mean(WDba)]
+sd_wd<-brut[Continent=="Africa"][!is.na(WDba),sd(WDba)]
+
+mean_agb<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd_agb<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+mean_agbcont<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd_agbcont<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+mean_agbreg<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd_agbreg<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+
+
+a<-essais2[area=="africa",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+b<-essais3[area=="africa",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+c<-essais2bis[area=="africa",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+d<-essais[area=="africa",.(from=var,to=sub_rep,coef=estimate)][to=="SD"]#j'ai toutes els directes vers attributs et entre ttributs
+e<-essais4[area=="africa",.(from=var,to=sub_rep,coef=estimate)][from=="DBHqm"]#DBHqm et SD sur AGB
+h<-essais4[area=="africa",.(from=var,to=sub_rep,coef=estimate)][from=="SD"]#DBHqm et SD sur AGB
+g<-essais4bis[area=="africa",.(from=var,to=sub_rep,coef=estimate)][!from=="DBHqm"&!from=="SD"&!from=="WDba"]#BA et env sur AGB
+f<-essais7[area=="africa",.(from=var,to=sub_rep,coef=estimate)][from=="WDba"]
+
+edges<-rbind(a,b,c,d,e,f,g,h)
+edges[to=="DBH_qm",to:="DBHqm"]
+
+#je standardise les coefs (en ecart type et en %)
+edges[to=="BA",coef_sd:=coef/sd_ba]
+edges[to=="BA",coef_pourc:=(coef/mean_ba)*100]
+
+edges[to=="SD",coef_sd:=coef/sd_sd]
+edges[to=="SD",coef_pourc:=(coef/mean_sd)*100]
+
+edges[to=="DBHqm",coef_sd:=coef/sd_dbh]
+edges[to=="DBHqm",coef_pourc:=(coef/mean_dbh)*100]
+
+
+edges[to=="WDba",coef_sd:=coef/sd_wd]
+edges[to=="WDba",coef_pourc:=(coef/mean_wd)*100]
+
+
+edges[to=="AGB_Feld_Pan",coef_sd:=coef/sd_agb]
+edges[to=="AGB_Feld_Pan",coef_pourc:=(coef/mean_agb)*100]
+
+
+edges[to=="AGB_Feld_Reg",coef_sd:=coef/sd_agbreg]
+edges[to=="AGB_Feld_Reg",coef_pourc:=(coef/mean_agbreg)*100]
+
+
+edges[to=="AGB_Feld_Cont",coef_sd:=coef/sd_agbcont]
+edges[to=="AGB_Feld_Cont",coef_pourc:=(coef/mean_agbcont)*100]
+
+edges_brut<-edges
+edges_brut2<-edges
+data<-edges_brut2[,area:="Africa"]
+data[,coef_brut:=NA]
+data2<-rbind(data2,data)
+
+###coef non stand
+
+sd_bio1<-brut[Continent=="Africa"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd_bio1[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio1<-sd_bio1[,sd(row_mean)]
+data2[from=="bio1"&area=="Africa",coef_brut:=(coef/sd_bio1)]
+
+sd_bio12<-brut[Continent=="Africa"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd_bio12[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio12<-sd_bio12[,sd(row_mean)]
+data2[from=="bio12"&area=="Africa",coef_brut:=(coef/sd_bio12)]
+
+sd_bio15<-brut[Continent=="Africa"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd_bio15[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio15<-sd_bio15[,sd(row_mean)]
+data2[from=="bio15"&area=="Africa",coef_brut:=(coef/sd_bio15)]
+
+sd<-brut[Continent=="Africa",sd(slope)]
+data2[from=="slope"&area=="Africa",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(sand)]
+data2[from=="sand"&area=="Africa",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(org)]
+data2[from=="org"&area=="Africa",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(ph)]
+data2[from=="ph"&area=="Africa",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(DBHqm)]
+data2[from=="DBHqm"&area=="Africa",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(SD)]
+data2[from=="SD"&area=="Africa",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(BA)]
+data2[from=="BA"&area=="Africa",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(WDba)]
+data2[from=="WDba"&area=="Africa",coef_brut:=(coef/sd)]
+```
+
+
+```{r }
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+#Africa
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+
+
+###################################################################################################################################
+###################################################################################################################################
+##AGB_Feld_pan
+###################################################################################################################################
+###################################################################################################################################
+################################################################################################################################### 
+edges<-edges_brut[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"] 
+# Harmonisation des noms
+edges[from=="bio1",from:="MAT"]
+edges[from=="bio12",from:="TAP"]
+edges[from=="bio15",from:="PS"]
+edges[from=="ph",from:="pH"]
+edges[from=="sand",from:="Sand "]
+edges[from=="org",from:="Org. C "]
+edges[from=="slope",from:="Slope"]
+edges[from=="AGB_Feld_Pan",from:="AGB"]
+edges[to=="AGB_Feld_Pan",to:="AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp)
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]               <- c(0, 2.7)
+layout_mat["TAP", ]               <- c(0, 2.5)
+layout_mat["PS", ]                <- c(0, 2.3)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]                <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]             <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3,y_agb + 0.2 )
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all[area=="africa"&sub_rep=="WDba",rmse][[1]],
+  BA    = rmse_mean_ba[area=="africa"&sub_rep=="BA",rmse][[1]],
+  SD    = rmse_mean_all_all[area=="africa"&sub_rep=="SD",rmse][[1]],
+  DBHqm = rmse_mean_dbh[area=="africa"&sub_rep=="DBH_qm",rmse][[1]],
+  AGB   = rmse_mean_agb_all[area=="africa"&sub_rep=="AGB_Feld_Pan",rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all[area=="africa" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba[area=="africa" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all[area=="africa" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh[area=="africa" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all[area=="africa" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_sd))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_sd
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 0.1   ~ "< 0.1",
+  abs(E(graph)$weight) < 0.25  ~ "0.1 ≤ coef < 0.25",
+  abs(E(graph)$weight) < 0.5   ~ "0.25 ≤ coef < 0.5",
+  abs(E(graph)$weight) < 0.75  ~ "0.5 ≤ coef < 0.75",
+  TRUE                         ~ "coef ≥ 0.75"
+)
+
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+i<-ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+    values = c("< 0.1" = 0.5, "0.1 ≤ coef < 0.25" = 1, "0.25 ≤ coef < 0.5" = 1.5, "0.5 ≤ coef < 0.75" = 2, "coef ≥ 0.75" = 2.5),
+    name = "Standardized coefficient (sd)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("Africa") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+i
+
+
+
+##################################################################################################################################
+#Pourc
+#################################################################################################################################
+
+################################################################################################################################### 
+edges<-edges_brut[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"] 
+# Harmonisation des noms
+edges[from=="bio1",from:="MAT"]
+edges[from=="bio12",from:="TAP"]
+edges[from=="bio15",from:="PS"]
+edges[from=="ph",from:="pH"]
+edges[from=="sand",from:="Sand "]
+edges[from=="org",from:="Org. C "]
+edges[from=="slope",from:="Slope"]
+edges[from=="AGB_Feld_Pan",from:="AGB"]
+edges[to=="AGB_Feld_Pan",to:="AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp)
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]               <- c(0, 2.7)
+layout_mat["TAP", ]               <- c(0, 2.5)
+layout_mat["PS", ]                <- c(0, 2.3)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]                <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]             <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3,y_agb + 0.2 )
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all[area=="africa"&sub_rep=="WDba",rmse][[1]],
+  BA    = rmse_mean_ba[area=="africa"&sub_rep=="BA",rmse][[1]],
+  SD    = rmse_mean_all_all[area=="africa"&sub_rep=="SD",rmse][[1]],
+  DBHqm = rmse_mean_dbh[area=="africa"&sub_rep=="DBH_qm",rmse][[1]],
+  AGB   = rmse_mean_agb_all[area=="africa"&sub_rep=="AGB_Feld_Pan",rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all[area=="africa" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba[area=="africa" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all[area=="africa" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh[area=="africa" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all[area=="africa" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_pourc))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_pourc
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 1   ~ "< 1",
+  abs(E(graph)$weight) < 5  ~ "1 ≤ coef < 5",
+  abs(E(graph)$weight) < 10   ~ "5 ≤ coef < 10",
+  abs(E(graph)$weight) < 20  ~ "10 ≤ coef < 20",
+  TRUE                         ~ "coef ≥ 20"
+)
+E(graph)$edge_width <- factor(E(graph)$edge_width,
+                              levels = c("< 1",
+                                         "1 ≤ coef < 5",
+                                         "5 ≤ coef < 10",
+                                         "10 ≤ coef < 20",
+                                         "coef ≥ 20"))
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+j<-ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+     values = c("< 1" = 0.5, "1 ≤ coef < 5" = 1, "5 ≤ coef < 10" = 1.5, "10 ≤ coef < 20" = 2, "coef ≥ 20" = 2.5),
+    name = "Standardized coefficient (%)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("Africa") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+j
+
+
+
+
+```
+
+###Africa controlée 
+
+#####a) global
+```{r }
+brut<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+brut<-brut[!elevation.y>=1000]
+pion<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/pourc_pionnier_Af.csv")
+
+result <- merge(brut, pion[, .(plot, Proportion)], by.x = "PLT_trois_bis", by.y = "plot", all.x = TRUE)
+result[is.na(Proportion)&Continent=="Africa",uniqueN(PLT_trois_bis)]#28 plots ont pas
+
+result<-result[Continent=="Africa"][!is.na(Proportion)]
+result<-result[!elevation.y>=1000]
+
+mean_ba<-brut[Continent=="Africa"][!is.na(BA),mean(BA)]
+sd_ba<-brut[Continent=="Africa"][!is.na(BA),sd(BA)]
+
+mean_dbh<-brut[Continent=="Africa"][!is.na(DBHqm),mean(DBHqm)]
+sd_dbh<-brut[Continent=="Africa"][!is.na(DBHqm),sd(DBHqm)]
+
+mean_sd<-brut[Continent=="Africa"][!is.na(SD),mean(SD)]
+sd_sd<-brut[Continent=="Africa"][!is.na(SD),sd(SD)]
+
+mean_wd<-brut[Continent=="Africa"][!is.na(WDba),mean(WDba)]
+sd_wd<-brut[Continent=="Africa"][!is.na(WDba),sd(WDba)]
+
+mean_agb<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd_agb<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+mean_agbcont<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd_agbcont<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+mean_agbreg<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd_agbreg<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+mean_prop<-result[Continent=="Africa"][!is.na(Proportion),mean(Proportion)]
+sd_prop<-result[Continent=="Africa"][!is.na(Proportion),sd(Proportion)]
+
+
+a<-essais2_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+b<-essais3_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+c<-essais2bis_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)]#env sur att D et att sur att D
+d<-essais_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)][to=="SD"]#j'ai toutes els directes vers attributs et entre ttributs
+e<-essais4_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)][from=="DBHqm"]#DBHqm et SD sur AGB
+h<-essais4_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)][from=="SD"]#DBHqm et SD sur AGB
+g<-essais4bis_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)][!from=="DBHqm"&!from=="SD"&!from=="WDba"]#BA et env sur AGB
+f<-essais7_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)][from=="WDba"]
+
+edges<-rbind(a,b,c,d,e,f,g,h)
+edges[to=="DBH_qm",to:="DBHqm"]
+
+#je standardise les coefs (en ecart type et en %)
+edges[to=="BA",coef_sd:=coef/sd_ba]
+edges[to=="BA",coef_pourc:=(coef/mean_ba)*100]
+
+edges[to=="SD",coef_sd:=coef/sd_sd]
+edges[to=="SD",coef_pourc:=(coef/mean_sd)*100]
+
+edges[to=="DBHqm",coef_sd:=coef/sd_dbh]
+edges[to=="DBHqm",coef_pourc:=(coef/mean_dbh)*100]
+
+
+edges[to=="WDba",coef_sd:=coef/sd_wd]
+edges[to=="WDba",coef_pourc:=(coef/mean_wd)*100]
+
+
+edges[to=="AGB_Feld_Pan",coef_sd:=coef/sd_agb]
+edges[to=="AGB_Feld_Pan",coef_pourc:=(coef/mean_agb)*100]
+
+
+edges[to=="AGB_Feld_Reg",coef_sd:=coef/sd_agbreg]
+edges[to=="AGB_Feld_Reg",coef_pourc:=(coef/mean_agbreg)*100]
+
+
+edges[to=="AGB_Feld_Cont",coef_sd:=coef/sd_agbcont]
+edges[to=="AGB_Feld_Cont",coef_pourc:=(coef/mean_agbcont)*100]
+
+edges[to=="Proportion",coef_sd:=coef/sd_prop]
+edges[to=="Proportion",coef_pourc:=(coef/mean_prop)*100]
+
+edges_brut<-edges
+edges_brut2<-edges
+data<-edges_brut2[,area:="Africa_bis"]
+data[,coef_brut:=NA]
+data2<-rbind(data2,data)
+
+###coef non stand
+
+sd_bio1<-brut[Continent=="Africa"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd_bio1[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio1<-sd_bio1[,sd(row_mean)]
+data2[from=="bio1"&area=="Africa_bis",coef_brut:=(coef/sd_bio1)]
+
+sd_bio12<-brut[Continent=="Africa"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd_bio12[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio12<-sd_bio12[,sd(row_mean)]
+data2[from=="bio12"&area=="Africa_bis",coef_brut:=(coef/sd_bio12)]
+
+sd_bio15<-brut[Continent=="Africa"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd_bio15[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio15<-sd_bio15[,sd(row_mean)]
+data2[from=="bio15"&area=="Africa_bis",coef_brut:=(coef/sd_bio15)]
+
+sd<-brut[Continent=="Africa",sd(slope)]
+data2[from=="slope"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(sand)]
+data2[from=="sand"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(org)]
+data2[from=="org"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(ph)]
+data2[from=="ph"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(DBHqm)]
+data2[from=="DBHqm"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(SD)]
+data2[from=="SD"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-result[Continent=="Africa",sd(Proportion)]
+data2[from=="Proportion"&area=="Africa_bis",coef_brut:=(coef/sd)]
+```
+
+```{r }
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+#Africa
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+
+
+###################################################################################################################################
+###################################################################################################################################
+##AGB_Feld_pan
+###################################################################################################################################
+###################################################################################################################################
+################################################################################################################################### 
+# Harmonisation des noms
+edges <- edges_brut[!to=="AGB_Feld_Reg" & !to=="AGB_Feld_Cont"] 
+edges[from=="bio1", from := "MAT"]
+edges[from=="bio12", from := "TAP"]
+edges[from=="bio15", from := "PS"]
+edges[from=="ph", from := "pH"]
+edges[from=="sand", from := "Sand "]
+edges[from=="org", from := "Org. C "]
+edges[from=="slope", from := "Slope"]
+edges[from=="AGB_Feld_Pan", from := "AGB"]
+edges[to=="AGB_Feld_Pan", to := "AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp, "Proportion")
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]         <- c(0, 2.7)
+layout_mat["TAP", ]         <- c(0, 2.5)
+layout_mat["PS", ]          <- c(0, 2.3)
+layout_mat["Org. C ", ]     <- c(0, 1.9)
+layout_mat["pH", ]          <- c(0, 1.7)
+layout_mat["Sand ", ]       <- c(0, 1.5)
+layout_mat["Slope", ]       <- c(0, 1.3)
+layout_mat["Proportion", ]  <- c(0, 1.1)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]   <- c(1, y_agb + 1.1)
+layout_mat["BA", ]     <- c(0.8, y_agb + 0.5)
+layout_mat["SD", ]     <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ]  <- c(1.3, y_agb + 0.2)
+layout_mat["AGB", ]    <- c(2, 2.1)
+
+# Mise en forme layout
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all_af[area=="africa" & sub_rep=="WDba", rmse][[1]],
+  BA    = rmse_mean_ba_af[area=="africa" & sub_rep=="BA", rmse][[1]],
+  SD    = rmse_mean_all_all_af[area=="africa" & sub_rep=="SD", rmse][[1]],
+  DBHqm = rmse_mean_dbh_af[area=="africa" & sub_rep=="DBH_qm", rmse][[1]],
+  AGB   = rmse_mean_agb_all_af[area=="africa" & sub_rep=="AGB_Feld_Pan", rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all_af[area=="africa" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba_af[area=="africa" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all_af[area=="africa" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh_af[area=="africa" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all_af[area=="africa" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+graph <- graph_from_data_frame(edges[!is.na(coef_sd)], directed = TRUE)
+E(graph)$weight <- edges[!is.na(coef_sd), coef_sd]
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+# Positions
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+# Étiquettes sur les arêtes
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+# Épaisseurs
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 0.1   ~ "< 0.1",
+  abs(E(graph)$weight) < 0.25  ~ "0.1 ≤ coef < 0.25",
+  abs(E(graph)$weight) < 0.5   ~ "0.25 ≤ coef < 0.5",
+  abs(E(graph)$weight) < 0.75  ~ "0.5 ≤ coef < 0.75",
+  TRUE                         ~ "coef ≥ 0.75"
+)
+
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+k <- ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+    values = c("< 0.1" = 0.5, "0.1 ≤ coef < 0.25" = 1, "0.25 ≤ coef < 0.5" = 1.5, "0.5 ≤ coef < 0.75" = 2, "coef ≥ 0.75" = 2.5),
+    name = "Standardized coefficient (sd)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("Africa") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+k
+
+
+##################################################################################################################################
+#Pourc
+#################################################################################################################################
+
+# Harmonisation des noms
+edges <- edges_brut[!to=="AGB_Feld_Reg" & !to=="AGB_Feld_Cont"] 
+edges[from=="bio1", from := "MAT"]
+edges[from=="bio12", from := "TAP"]
+edges[from=="bio15", from := "PS"]
+edges[from=="ph", from := "pH"]
+edges[from=="sand", from := "Sand "]
+edges[from=="org", from := "Org. C "]
+edges[from=="slope", from := "Slope"]
+edges[from=="AGB_Feld_Pan", from := "AGB"]
+edges[to=="AGB_Feld_Pan", to := "AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp, "Proportion")
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]         <- c(0, 2.7)
+layout_mat["TAP", ]         <- c(0, 2.5)
+layout_mat["PS", ]          <- c(0, 2.3)
+layout_mat["Org. C ", ]     <- c(0, 1.9)
+layout_mat["pH", ]          <- c(0, 1.7)
+layout_mat["Sand ", ]       <- c(0, 1.5)
+layout_mat["Slope", ]       <- c(0, 1.3)
+layout_mat["Proportion", ]  <- c(0, 1.1)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]   <- c(1, y_agb + 1.1)
+layout_mat["BA", ]     <- c(0.8, y_agb + 0.5)
+layout_mat["SD", ]     <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ]  <- c(1.3, y_agb + 0.2)
+layout_mat["AGB", ]    <- c(2, 2.1)
+
+# Mise en forme layout
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all_af[area=="africa" & sub_rep=="WDba", rmse][[1]],
+  BA    = rmse_mean_ba_af[area=="africa" & sub_rep=="BA", rmse][[1]],
+  SD    = rmse_mean_all_all_af[area=="africa" & sub_rep=="SD", rmse][[1]],
+  DBHqm = rmse_mean_dbh_af[area=="africa" & sub_rep=="DBH_qm", rmse][[1]],
+  AGB   = rmse_mean_agb_all_af[area=="africa" & sub_rep=="AGB_Feld_Pan", rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all_af[area=="africa" & sub_rep=="WDba", rsquared][[1]],
+  BA    = rmse_mean_ba_af[area=="africa" & sub_rep=="BA", rsquared][[1]],
+  SD    = rmse_mean_all_all_af[area=="africa" & sub_rep=="SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh_af[area=="africa" & sub_rep=="DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all_af[area=="africa" & sub_rep=="AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+graph <- graph_from_data_frame(edges %>% filter(!is.na(coef_pourc)), directed = TRUE)
+E(graph)$weight <- edges[!is.na(coef_pourc), coef_pourc]
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 1   ~ "< 1",
+  abs(E(graph)$weight) < 5   ~ "1 ≤ coef < 5",
+  abs(E(graph)$weight) < 10  ~ "5 ≤ coef < 10",
+  abs(E(graph)$weight) < 20  ~ "10 ≤ coef < 20",
+  TRUE                       ~ "coef ≥ 20"
+)
+
+E(graph)$edge_width <- factor(E(graph)$edge_width,
+                              levels = c("< 1", "1 ≤ coef < 5", "5 ≤ coef < 10", "10 ≤ coef < 20", "coef ≥ 20"))
+
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+l <- ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+    values = c("< 1" = 0.5, "1 ≤ coef < 5" = 1, "5 ≤ coef < 10" = 1.5, "10 ≤ coef < 20" = 2, "coef ≥ 20" = 2.5),
+    name = "Standardized coefficient (%)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("Africa") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+l
+
+
+
+
+
+```
+
+#####b) avec proportion
+```{r }
+brut<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+brut<-brut[!elevation.y>=1000]
+pion<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/pourc_pionnier_Af.csv")
+
+result <- merge(brut, pion[, .(plot, Proportion)], by.x = "PLT_trois_bis", by.y = "plot", all.x = TRUE)
+result[is.na(Proportion)&Continent=="Africa",uniqueN(PLT_trois_bis)]#28 plots ont pas
+
+result<-result[Continent=="Africa"][!is.na(Proportion)]
+result<-result[!elevation.y>=1000]
+
+mean_ba<-brut[Continent=="Africa"][!is.na(BA),mean(BA)]
+sd_ba<-brut[Continent=="Africa"][!is.na(BA),sd(BA)]
+
+mean_dbh<-brut[Continent=="Africa"][!is.na(DBHqm),mean(DBHqm)]
+sd_dbh<-brut[Continent=="Africa"][!is.na(DBHqm),sd(DBHqm)]
+
+mean_sd<-brut[Continent=="Africa"][!is.na(SD),mean(SD)]
+sd_sd<-brut[Continent=="Africa"][!is.na(SD),sd(SD)]
+
+mean_wd<-brut[Continent=="Africa"][!is.na(WDba),mean(WDba)]
+sd_wd<-brut[Continent=="Africa"][!is.na(WDba),sd(WDba)]
+
+mean_agb<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd_agb<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+mean_agbcont<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd_agbcont<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+mean_agbreg<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd_agbreg<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+mean_prop<-result[Continent=="Africa"][!is.na(Proportion),mean(Proportion)]
+sd_prop<-result[Continent=="Africa"][!is.na(Proportion),sd(Proportion)]
+
+
+a<-essais2_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)]
+b<-essais3_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)]
+c<-essais_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)][to=="WDba"]
+d<-essais_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)][to=="SD"]#j'ai toutes els directes vers attributs et entre ttributs
+e<-essais4_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)]
+f<-essais7_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)][from=="WDba"]
+g<-essais8_af[area=="africa",.(from=var,to=sub_rep,coef=estimate)]
+
+edges<-rbind(a,b,c,d,e,f,g)
+edges[to=="DBH_qm",to:="DBHqm"]
+
+#je standardise les coefs (en ecart type et en %)
+edges[to=="BA",coef_sd:=coef/sd_ba]
+edges[to=="BA",coef_pourc:=(coef/mean_ba)*100]
+
+edges[to=="SD",coef_sd:=coef/sd_sd]
+edges[to=="SD",coef_pourc:=(coef/mean_sd)*100]
+
+edges[to=="DBHqm",coef_sd:=coef/sd_dbh]
+edges[to=="DBHqm",coef_pourc:=(coef/mean_dbh)*100]
+
+
+edges[to=="WDba",coef_sd:=coef/sd_wd]
+edges[to=="WDba",coef_pourc:=(coef/mean_wd)*100]
+
+
+edges[to=="AGB_Feld_Pan",coef_sd:=coef/sd_agb]
+edges[to=="AGB_Feld_Pan",coef_pourc:=(coef/mean_agb)*100]
+
+
+edges[to=="AGB_Feld_Reg",coef_sd:=coef/sd_agbreg]
+edges[to=="AGB_Feld_Reg",coef_pourc:=(coef/mean_agbreg)*100]
+
+
+edges[to=="AGB_Feld_Cont",coef_sd:=coef/sd_agbcont]
+edges[to=="AGB_Feld_Cont",coef_pourc:=(coef/mean_agbcont)*100]
+
+edges[to=="Proportion",coef_sd:=coef/sd_prop]
+edges[to=="Proportion",coef_pourc:=(coef/mean_prop)*100]
+
+edges_brut<-edges
+edges_brut2<-edges
+#data<-edges_brut2[,area:="Africa_bis"]
+#data[,coef_brut:=NA]
+#data2<-rbind(data2,data)
+
+###coef non stand
+
+sd_bio1<-brut[Continent=="Africa"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd_bio1[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio1<-sd_bio1[,sd(row_mean)]
+data2[from=="bio1"&area=="Africa_bis",coef_brut:=(coef/sd_bio1)]
+
+sd_bio12<-brut[Continent=="Africa"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd_bio12[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio12<-sd_bio12[,sd(row_mean)]
+data2[from=="bio12"&area=="Africa_bis",coef_brut:=(coef/sd_bio12)]
+
+sd_bio15<-brut[Continent=="Africa"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd_bio15[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd_bio15<-sd_bio15[,sd(row_mean)]
+data2[from=="bio15"&area=="Africa_bis",coef_brut:=(coef/sd_bio15)]
+
+sd<-brut[Continent=="Africa",sd(slope)]
+data2[from=="slope"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(sand)]
+data2[from=="sand"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(org)]
+data2[from=="org"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(ph)]
+data2[from=="ph"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(DBHqm)]
+data2[from=="DBHqm"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-brut[Continent=="Africa",sd(SD)]
+data2[from=="SD"&area=="Africa_bis",coef_brut:=(coef/sd)]
+
+sd<-result[Continent=="Africa",sd(Proportion)]
+data2[from=="Proportion"&area=="Africa_bis",coef_brut:=(coef/sd)]
+```
+
+```{r }
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+#Africa
+###################################################################################################################################
+###################################################################################################################################
+###################################################################################################################################
+
+edges <- edges_brut[!to == "AGB_Feld_Reg" & !to == "AGB_Feld_Cont"]
+
+# Harmonisation des noms
+edges[from == "bio1", from := "MAT"]
+edges[from == "bio12", from := "TAP"]
+edges[from == "bio15", from := "PS"]
+edges[from == "ph", from := "pH"]
+edges[from == "sand", from := "Sand "]
+edges[from == "org", from := "Org. C "]
+edges[from == "slope", from := "Slope"]
+edges[from == "AGB_Feld_Pan", from := "AGB"]
+edges[to == "AGB_Feld_Pan", to := "AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp, "Proportion")  # <- Proportion ajoutée ici
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]        <- c(0, 2.7)
+layout_mat["TAP", ]        <- c(0, 2.5)
+layout_mat["PS", ]         <- c(0, 2.3)
+layout_mat["Proportion", ] <- c(0.4, 1.7)  # <- décalée vers la droite
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]         <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]      <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3, y_agb + 0.2)
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all_af[area == "africa" & sub_rep == "WDba", rmse][[1]],
+  BA    = rmse_mean_ba_af[area == "africa" & sub_rep == "BA", rmse][[1]],
+  SD    = rmse_mean_all_all_af[area == "africa" & sub_rep == "SD", rmse][[1]],
+  DBHqm = rmse_mean_dbh_af[area == "africa" & sub_rep == "DBH_qm", rmse][[1]],
+  AGB   = rmse_mean_agb_all_af[area == "africa" & sub_rep == "AGB_Feld_Pan", rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all_af[area == "africa" & sub_rep == "WDba", rsquared][[1]],
+  BA    = rmse_mean_ba_af[area == "africa" & sub_rep == "BA", rsquared][[1]],
+  SD    = rmse_mean_all_all_af[area == "africa" & sub_rep == "SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh_af[area == "africa" & sub_rep == "DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all_af[area == "africa" & sub_rep == "AGB_Feld_Pan", rsquared][[1]]
+)
+
+# Graphe
+edges_plot <- edges %>% filter(!is.na(coef_sd))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_sd
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 0.1   ~ "< 0.1",
+  abs(E(graph)$weight) < 0.25  ~ "0.1 ≤ coef < 0.25",
+  abs(E(graph)$weight) < 0.5   ~ "0.25 ≤ coef < 0.5",
+  abs(E(graph)$weight) < 0.75  ~ "0.5 ≤ coef < 0.75",
+  TRUE                         ~ "coef ≥ 0.75"
+)
+
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+m <- ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(
+    values = c("< 0.1" = 0.5, "0.1 ≤ coef < 0.25" = 1, "0.25 ≤ coef < 0.5" = 1.5, "0.5 ≤ coef < 0.75" = 2, "coef ≥ 0.75" = 2.5),
+    name = "Standardized coefficient (sd)",
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("Africa") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+m
+
+
+
+##################################################################################################################################
+#Pourc
+#################################################################################################################################
+
+################################################################################################################################### 
+
+edges <- edges_brut[!to == "AGB_Feld_Reg" & !to == "AGB_Feld_Cont"]
+
+# Harmonisation des noms
+edges[from == "bio1", from := "MAT"]
+edges[from == "bio12", from := "TAP"]
+edges[from == "bio15", from := "PS"]
+edges[from == "ph", from := "pH"]
+edges[from == "sand", from := "Sand "]
+edges[from == "org", from := "Org. C "]
+edges[from == "slope", from := "Slope"]
+edges[from == "AGB_Feld_Pan", from := "AGB"]
+edges[to == "AGB_Feld_Pan", to := "AGB"]
+
+# Groupes de variables
+climatiques    <- c("MAT", "TAP", "PS")
+autres_exp     <- c("Org. C ", "pH", "Sand ", "Slope")
+explicatives   <- c(climatiques, autres_exp, "Proportion")
+structurelles  <- c("WDba", "BA", "SD", "DBHqm")
+agb            <- "AGB"
+
+# Initialisation layout
+all_nodes <- unique(c(edges$from, edges$to))        
+layout_mat <- matrix(NA, nrow = length(all_nodes), ncol = 2)
+rownames(layout_mat) <- all_nodes
+
+# Position manuelle
+layout_mat["MAT", ]        <- c(0, 2.7)
+layout_mat["TAP", ]        <- c(0, 2.5)
+layout_mat["PS", ]         <- c(0, 2.3)
+layout_mat["Proportion", ] <- c(0.4, 1.7)
+layout_mat["Org. C ", ]    <- c(0, 1.9)
+layout_mat["pH", ]         <- c(0, 1.7)
+layout_mat["Sand ", ]      <- c(0, 1.5)
+layout_mat["Slope", ]      <- c(0, 1.3)
+
+# Variables structurelles
+y_agb <- 1.6
+layout_mat["WDba", ]  <- c(1, y_agb + 1.1)
+layout_mat["BA",   ]  <- c(0.8, y_agb + 0.5)
+layout_mat["SD",   ]  <- c(1, y_agb - 0.3)
+layout_mat["DBHqm", ] <- c(1.3, y_agb + 0.2)
+layout_mat["AGB", ]   <- c(2, 2.1)
+
+# Mise en forme
+df_layout <- as_tibble(layout_mat, rownames = "name")
+colnames(df_layout) <- c("name", "x", "y")
+
+# RMSE / R²
+rmse_vals <- c(
+  WDba  = rmse_mean_all_all_af[area == "africa" & sub_rep == "WDba", rmse][[1]],
+  BA    = rmse_mean_ba_af[area == "africa" & sub_rep == "BA", rmse][[1]],
+  SD    = rmse_mean_all_all_af[area == "africa" & sub_rep == "SD", rmse][[1]],
+  DBHqm = rmse_mean_dbh_af[area == "africa" & sub_rep == "DBH_qm", rmse][[1]],
+  AGB   = rmse_mean_agb_all_af[area == "africa" & sub_rep == "AGB_Feld_Pan", rmse][[1]]
+)
+
+rsq_vals <- c(
+  WDba  = rmse_mean_all_all_af[area == "africa" & sub_rep == "WDba", rsquared][[1]],
+  BA    = rmse_mean_ba_af[area == "africa" & sub_rep == "BA", rsquared][[1]],
+  SD    = rmse_mean_all_all_af[area == "africa" & sub_rep == "SD", rsquared][[1]],
+  DBHqm = rmse_mean_dbh_af[area == "africa" & sub_rep == "DBH_qm", rsquared][[1]],
+  AGB   = rmse_mean_agb_all_af[area == "africa" & sub_rep == "AGB_Feld_Pan", rsquared][[1]]
+)
+
+# 🔄 MODIF pour coef_pourc
+edges_plot <- edges %>% filter(!is.na(coef_pourc))
+graph <- graph_from_data_frame(edges_plot, directed = TRUE)
+E(graph)$weight <- edges_plot$coef_pourc  # 🔄 MODIF
+E(graph)$color  <- ifelse(E(graph)$weight > 0, "forestgreen", "firebrick3")
+
+df_layout <- df_layout %>%
+  filter(name %in% V(graph)$name) %>%
+  arrange(match(name, V(graph)$name))
+
+edge_df <- igraph::as_data_frame(graph, what = "edges") %>%
+  mutate(
+    x = (df_layout$x[match(from, df_layout$name)] + df_layout$x[match(to, df_layout$name)]) / 2,
+    y = (df_layout$y[match(from, df_layout$name)] + df_layout$y[match(to, df_layout$name)]) / 2,
+    label = round(weight, 2),
+    text_color = ifelse(weight > 0, "forestgreen", "firebrick3")
+  )
+
+# 🔄 MODIF pour % : nouvelle classification
+E(graph)$edge_width <- case_when(
+  abs(E(graph)$weight) < 1    ~ "< 1",
+  abs(E(graph)$weight) < 5    ~ "1 ≤ coef < 5",
+  abs(E(graph)$weight) < 10   ~ "5 ≤ coef < 10",
+  abs(E(graph)$weight) < 20   ~ "10 ≤ coef < 20",
+  TRUE                        ~ "coef ≥ 20"
+)
+E(graph)$edge_width <- factor(E(graph)$edge_width,
+                              levels = c("< 1",
+                                         "1 ≤ coef < 5",
+                                         "5 ≤ coef < 10",
+                                         "10 ≤ coef < 20",
+                                         "coef ≥ 20"))
+
+# Labels riches avec ggtext
+library(ggtext)
+labels_rmse_rsq <- sapply(df_layout$name, function(var) {
+  if (var %in% names(rmse_vals)) {
+    paste0("<b>", var, "</b><br><span style='font-size:9pt;'>",
+           "RMSE = ", round(rmse_vals[[var]], 2), "<br>",
+           "R² = ", round(rsq_vals[[var]], 2), "</span>")
+  } else if (var %in% explicatives) {
+    paste0("<b>", var, "</b>")
+  } else {
+    var
+  }
+})
+
+df_layout <- df_layout %>%
+  mutate(label = ifelse(name %in% names(labels_rmse_rsq), labels_rmse_rsq[name], name))
+
+# Tracé final
+library(ggraph)
+library(shadowtext)
+
+n <- ggraph(graph, layout = "manual", x = df_layout$x, y = df_layout$y) +
+  geom_edge_link(aes(color = I(color), width = edge_width),
+                 arrow = arrow(length = unit(3, 'mm')),
+                 end_cap = circle(13, 'mm'),
+                 lineend = "round") +
+  shadowtext::geom_shadowtext(
+    data = edge_df,
+    aes(x = x, y = y, label = label, color = text_color),
+    size = 4,
+    fontface = "bold",
+    bg.colour = "white",
+    bg.r = 0.15
+  ) +
+  scale_color_manual(values = c("forestgreen" = "forestgreen", "firebrick3" = "firebrick3"), guide = "none") +
+  scale_edge_width_manual(  # 🔄 MODIF
+    values = c("< 1" = 0.5,
+               "1 ≤ coef < 5" = 1,
+               "5 ≤ coef < 10" = 1.5,
+               "10 ≤ coef < 20" = 2,
+               "coef ≥ 20" = 2.5),
+    name = "Standardized coefficient (%)",  # 🔄 MODIF
+    guide = guide_legend(override.aes = list(color = "grey1"))
+  ) +
+  geom_node_point(size = 32, shape = 21, fill = "white", color = "grey1", stroke = 1.5) +
+  ggtext::geom_richtext(data = df_layout, aes(x = x, y = y, label = label),
+                        fill = NA, label.color = NA, size = 5, lineheight = 1.1) +
+  coord_cartesian(ylim = c(1.1, 2.8)) +
+  theme_void() +
+  ggtitle("Africa") +  # 🔄 MODIF titre
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+
+n
+
+
+
+
+```
+
+#Le graphique
+
+```{r }
+library(ggplot2)
+library(dplyr)
+
+# --- Exemple de données à adapter à ton propre tableau ---
+mydata<-data2[!to=="AGB_Feld_Reg"&!to=="AGB_Feld_Cont"&!from=="Proportion"&!from=="BA"&!from=="DBHqm"&!from=="SD"&!from=="WDba"&!from=="slope"&!from=="sand"&!from=="org"&!from=="ph"&!area=="Africa"]
+
+# --- Créer le tableau avec les relations ---
+mydata <- mydata[,.(from, to, area, coef_pourc)]
+mydata$from_to <- paste(mydata$from, mydata$to, sep = "_") # ✅ ne pas nommer cette colonne 'relation'
+
+# --- Réordonner selon 'from' d'abord (bio1 → bio12 → bio15), puis 'to'
+ordre_from <- c("bio1", "bio12", "bio15")
+ordre_to   <- c("WDba", "BA", "DBHqm", "SD", "AGB_Feld_Pan")
+
+mydata <- mydata %>%
+  filter(from %in% ordre_from, to %in% ordre_to) %>%
+  mutate(
+    from = factor(from, levels = ordre_from),
+    to   = factor(to, levels = ordre_to),
+    from_to = paste(from, to, sep = "_")
+  ) %>%
+  arrange(from, to)  # ✅ trie d’abord sur 'from', puis sur 'to'
+
+# --- Réordonner l’axe Y
+mydata$from_to <- factor(mydata$from_to, levels = rev(unique(mydata$from_to)))
+
+# --- Ordonner les axes si besoin ---
+mydata$area <- factor(mydata$area, levels = c("North America","South America", "Africa", "Africa_bis", "Asia", "Oceania"))
+mydata$from_to <- factor(mydata$from_to, levels = rev(unique(mydata$from_to)))  # ordre inversé pour affichage vertical
+
+
+# --- Graphe final ---
+library(ggplot2)
+
+ggplot(mydata, aes(x = area, y = from_to)) +
+  geom_tile(color = "black", fill = "white", linewidth = 0.3, linetype = "dashed")+
+  geom_point(
+    aes(
+      size = abs(coef_pourc),
+      color = coef_pourc > 0  # TRUE = vert, FALSE = rouge
+    ),
+    alpha = 1  # pleine opacité
+  ) +
+  scale_color_manual(
+    values = c("FALSE" = "firebrick3", "TRUE" = "forestgreen"),
+    guide = "none"  # ❌ pas de légende couleur
+  ) +
+ scale_size_continuous(
+  range = c(1, 18),
+  name = "(%)",
+  breaks = c(0.1, 1, 5, 10, 15, 20,  30),
+  limits = c(0, 31)
+)+
+  scale_x_discrete(position = "top") +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  theme(
+    axis.text.x.top = element_text(angle = 45, hjust = 0),
+    axis.text.y = element_text(size = 10, face = "bold", color = "black"),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    panel.background = element_blank()
+  )
+
+```
+#Export DAG direct
+```{r }
+
+
+#Export DAG direct
+#ggsave("SEM_Oceania.pdf", plot = one, device = cairo_pdf)
+#ggsave("SEM_NA.pdf", plot = three, device = cairo_pdf)
+#ggsave("SEM_SA.pdf", plot = five, device = cairo_pdf)
+#ggsave("SEM_Asia.pdf", plot = o, device = cairo_pdf)
+#ggsave("SEM_Africa.pdf", plot = i, device = cairo_pdf)
+#ggsave("SEM_Africacont.pdf", plot = k, device = cairo_pdf)
+#ggsave("SEM_Africacont2.pdf", plot = m, device = cairo_pdf)
+
+#ggsave("SEM_Oceania_pourc.pdf", plot = two, device = cairo_pdf)
+#ggsave("SEM_NA_pourc.pdf", plot = four, device = cairo_pdf)
+#ggsave("SEM_SA_pourc.pdf", plot = q, device = cairo_pdf)
+#ggsave("SEM_Asia_pourc.pdf", plot = p, device = cairo_pdf)
+#ggsave("SEM_Africa_pourc.pdf", plot = j, device = cairo_pdf)
+#ggsave("SEM_Africacont_pourc.pdf", plot = l, device = cairo_pdf)
+#ggsave("SEM_Africacont2_pourc.pdf", plot = n, device = cairo_pdf)
+
+```
+#Export tables coef direct
+```{r }
+#fwrite(data2[,.(from,to,area,coef_brut,coef,coef_sd,coef_pourc)],"direct_model_coef.csv")
+```
+
+
+#Camemberts
+```{r }
+#fwrite(rmse_mean_all_all_bis,"rmse_mean_all_all_bis.csv")
+#pour att sur agb
+tab1<-mean_coef_wdba[!var=="BA"&!area=="africa"]#enelver ba
+tab2<-mean_coef_wdba_af[!var=="BA"]#enelver ba
+wdba<-rbind(tab1,tab2)
+
+tab1<-mean_coef_ba[!var=="SD"&!var=="DBHqm"&!area=="africa"]#enlever dbh et sd
+tab2<-mean_coef_ba_af[!var=="SD"&!var=="DBHqm"]#
+ba<-rbind(tab1,tab2)
+
+tab1<-mean_coef_all_all[sub_rep=="SD"&!area=="africa"]
+tab2<-mean_coef_all_all_af[sub_rep=="SD"]
+sd<-rbind(tab1,tab2)
+
+tab1<-mean_coef_dbh[!var=="SD"&!area=="africa"]#enlever sd
+tab2<-mean_coef_dbh_af[!var=="SD"]
+dbh<-rbind(tab1,tab2)
+
+att<-rbind(dbh,sd,wdba,ba)
+att[area=="north America",area:="North America"]
+att<-att[!var=="ph"&!var=="sand"&!var=="org"&!var=="slope"&!var=="Proportion"]
+
+tab1<-mean_coef_agb_all[!var=="SD"&!var=="DBHqm"&!var=="BA"&!var=="WDba"&!area=="africa"]
+tab2<-mean_coef_agb_all_af[!var=="SD"&!var=="DBHqm"&!var=="BA"&!var=="WDba"]
+agb<-rbind(tab1,tab2)
+agb<-agb[!var=="ph"&!var=="sand"&!var=="org"&!var=="slope"&!var=="Proportion"]
+```
+
+```{r }
+# Charger les packages nécessaires
+library(tidyverse)
+
+library(tidyverse)
+# Charger les packages nécessaires
+library(tidyverse)
+
+library(tidyverse)
+
+att[area=="Oceania",area:="oceania"]
+att<-att[est=="estimate"]
+df<-att
+
+# Étape 1 : exclure les contradictions
+df_no_contradiction <- df %>%
+  mutate(contradiction = has_positive & has_negative) %>%
+  filter(!contradiction)
+
+df_contradiction <- df %>%
+  mutate(contradiction = has_positive & has_negative) %>%
+  filter(contradiction)
+
+# Étape 2 : ajouter la catégorie N = 0
+df_no_contradiction <- df_no_contradiction %>%
+  mutate(
+    N_group = case_when(
+      N == 0 ~ "No signficant relationship",
+      N < 4 ~ "<4/7 climate datasets",
+      N >= 4 ~ "≥4/7 climate datasets"
+    )
+  )
+
+# Étape 3 : compter les cas par groupe
+df_no_contradiction <- df_no_contradiction[ ,.N, by = "N_group"]
+
+# Étape 4 : calculer les pourcentages
+df_summary1 <- df_no_contradiction %>%
+  mutate(percentage = round(100 * N / sum(60), 1))
+
+# Étape 5 : ligne pour contradiction
+df_summary2 <- data.table(
+  N_group = "Contradiction",
+  N = nrow(df_contradiction)
+)
+df_summary2[, percentage := round(100 * N / sum(60))]
+
+# Étape 6 : combiner
+df_summary <- rbind(df_summary1, df_summary2)
+
+# Étape 7 : camembert
+a <- ggplot(df_summary, aes(x = "", y = percentage, fill = N_group)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar("y") +
+  geom_text(aes(label = paste0(percentage, "%")),
+            position = position_stack(vjust = 0.5),
+            color = "black") +
+  scale_fill_manual(values = c(
+    "≥4/7 climate datasets" = "darkolivegreen3",
+    "<4/7 climate datasets" = "#d3d3d3",
+    "Contradiction" = "antiquewhite4",
+    "No signficant relationship" = "grey60"
+  )) +
+  labs(
+    title = "A",
+    fill = "Agreement between climate datasets \n on the direction of relationships"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0),
+    plot.title.position = "plot"
+  )
+
+
+agb<-agb[est=="estimate"]
+df<-agb
+
+# Étape 1 : exclure les contradictions
+df_no_contradiction <- df %>%
+  mutate(contradiction = has_positive & has_negative) %>%
+  filter(!contradiction)
+
+df_contradiction <- df %>%
+  mutate(contradiction = has_positive & has_negative) %>%
+  filter(contradiction)
+
+# Étape 2 : créer la colonne N_group
+df_no_contradiction <- df_no_contradiction %>%
+  mutate(N_group = case_when(
+    N == 0 ~ "No signficant relationship",
+    N < 4 ~ "<4/7 climate datasets",
+    TRUE ~ "≥4/7 climate datasets"
+  ))
+
+# Étape 3 : compter les cas par groupe
+df_no_contradiction <- df_no_contradiction[ ,.N,by="N_group"]
+
+# Étape 4 : calculer les pourcentages
+df_summary1 <- df_no_contradiction %>%
+  mutate(percentage = round(100 * N / sum(39), 1))
+
+# Étape 5 : ligne pour contradiction
+df_summary2 <- data.table(
+  N_group = "Contradiction",
+  N = nrow(df_contradiction)
+)
+df_summary2[,percentage:=round(100 * N / sum(39))]
+
+# Étape 6 : combiner
+df_summary <- rbind(df_summary1, df_summary2)
+
+# Étape 7 : faire un camembert
+b <- ggplot(df_summary, aes(x = "", y = percentage, fill = N_group)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar("y") +
+  geom_text(aes(label = paste0(percentage, "%")),
+            position = position_stack(vjust = 0.5),
+            color = "black") +
+  scale_fill_manual(values = c(
+    "≥4/7 climate datasets" = "darkolivegreen3",
+    "<4/7 climate datasets" = "#d3d3d3",
+    "Contradiction" = "antiquewhite4",
+    "No signficant relationship" = "grey60"
+  )) +
+  labs(
+    title = "B",
+    fill = "Agreement between climate datasets \n on the direction of relationships"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0),
+    plot.title.position = "plot"
+  )
+
+library(gridExtra)
+
+figure<-grid.arrange(a,b,
+             nrow =1 )
+
+ggsave("camemberts.png", plot = figure, width = 10, height = 10, dpi = 300)
+
+
+```
+#Importation
+```{r }
+rm(list=ls()) 
+
+setwd("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/8_Graph/")
+brut<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+brut<-brut[!elevation.y>=1000]
+#Libraries
+library(data.table) #is used to import and manipulate tables
+library(ggplot2)
+library(qgraph)
+library(igraph)
+
+library(ggraph)
+library(tidyverse)
+#Tableau,pour tous les continents, toutes les variables réponse, effet total env sur chaque variable réponse (attributs et AGBs)
+mean_coef_all_all<-fread("mean_coef_all_all.csv")
+rmse_mean_all_all<-fread("rmse_mean_all_all.csv")
+rmse_mean_all_all<-rmse_mean_all_all[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais<-dcast(mean_coef_all_all,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet direct Env sur BA
+mean_coef_ba<-fread("mean_coef_ba_dbh_sd.csv")
+rmse_mean_ba<-fread("rmse_mean_ba_dbh_sd.csv")
+rmse_mean_ba<-rmse_mean_ba[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais2<-dcast(mean_coef_ba,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet direct env sur DBHqm
+mean_coef_dbh<-fread("mean_coef_dbh_sd.csv")
+rmse_mean_dbh<-fread("rmse_mean_dbh_sd.csv")
+rmse_mean_dbh<-rmse_mean_dbh[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais3<-dcast(mean_coef_dbh,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Effet direct env sur DBHqm
+mean_coef_wdba<-fread("mean_coef_wdba_ba.csv")
+rmse_mean_wdba<-fread("rmse_mean_wdba_ba.csv")
+rmse_mean_wdba<-rmse_mean_wdba[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais2bis<-dcast(mean_coef_wdba,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet direct attributs sur AGB
+mean_coef_agb<-fread("mean_coef_agb.csv")
+rmse_mean_agb<-fread("rmse_mean_agb.csv")
+rmse_mean_agb<-rmse_mean_agb[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais4<-dcast(mean_coef_agb,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Effet direct attributs sur AGB
+mean_coef_agb_all<-fread("mean_coef_agb_all.csv")
+rmse_mean_agb_all<-fread("rmse_mean_agb_all.csv")
+rmse_mean_agb_all<-rmse_mean_agb_all[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais4bis<-dcast(mean_coef_agb_all,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet total attributs sur AGB
+mean_coef_agb_sd<-fread("mean_coef_agb_sd.csv")
+rmse_mean_agb_sd<-fread("rmse_mean_agb_sd.csv")
+rmse_mean_agb_sd<-rmse_mean_agb_sd[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais5<-dcast(mean_coef_agb_sd,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_dbh_sd<-fread("mean_coef_agb_dbh_sd.csv")
+rmse_mean_agb_dbh_sd<-fread("rmse_mean_agb_dbh_sd.csv")
+rmse_mean_agb_dbh_sd<-rmse_mean_agb_dbh_sd[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais6<-dcast(mean_coef_agb_dbh_sd,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_wdba<-fread("mean_coef_agb_wdba.csv")
+rmse_mean_agb_wdba<-fread("rmse_mean_agb_wdba.csv")
+rmse_mean_agb_wdba<-rmse_mean_agb_wdba[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais7<-dcast(mean_coef_agb_wdba,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+##Africa avec Proportion####################################################################################################################################################
+
+#Tableau,pour tous les continents, toutes les variables réponse, effet total env sur chaque variable réponse (attributs et AGBs)
+mean_coef_all_all_af<-fread("mean_coef_all_all_af.csv")
+rmse_mean_all_all_af<-fread("rmse_mean_all_all_af.csv")
+rmse_mean_all_all_af<-rmse_mean_all_all_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais_af<-dcast(mean_coef_all_all_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet direct Env sur BA
+mean_coef_ba_af<-fread("mean_coef_ba_dbh_sd_af.csv")
+rmse_mean_ba_af<-fread("rmse_mean_ba_dbh_sd_af.csv")
+rmse_mean_ba_af<-rmse_mean_ba_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais2_af<-dcast(mean_coef_ba_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet direct env sur DBHqm
+mean_coef_dbh_af<-fread("mean_coef_dbh_sd_af.csv")
+rmse_mean_dbh_af<-fread("rmse_mean_dbh_sd_af.csv")
+rmse_mean_dbh_af<-rmse_mean_dbh_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais3_af<-dcast(mean_coef_dbh_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Effet direct env sur DBHqm
+mean_coef_wdba_af<-fread("mean_coef_wdba_ba_af.csv")
+rmse_mean_wdba_af<-fread("rmse_mean_wdba_ba_af.csv")
+rmse_mean_wdba_af<-rmse_mean_wdba_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais2bis_af<-dcast(mean_coef_wdba_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Effet direct attributs sur AGB
+mean_coef_agb_af<-fread("mean_coef_agb_af.csv")
+rmse_mean_agb_af<-fread("rmse_mean_agb_af.csv")
+rmse_mean_agb_af<-rmse_mean_agb_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais4_af<-dcast(mean_coef_agb_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Effet direct attributs sur AGB
+mean_coef_agb_all_af<-fread("mean_coef_agb_all_af.csv")
+rmse_mean_agb_all_af<-fread("rmse_mean_agb_all_af.csv")
+rmse_mean_agb_all_af<-rmse_mean_agb_all_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais4bis_af<-dcast(mean_coef_agb_all_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Effet total attributs sur AGB
+mean_coef_agb_sd_af<-fread("mean_coef_agb_sd_af.csv")
+rmse_mean_agb_sd_af<-fread("rmse_mean_agb_sd_af.csv")
+rmse_mean_agb_sd_af<-rmse_mean_agb_sd_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais5_af<-dcast(mean_coef_agb_sd_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_dbh_sd_af<-fread("mean_coef_agb_dbh_sd_af.csv")
+rmse_mean_agb_dbh_sd_af<-fread("rmse_mean_agb_dbh_sd_af.csv")
+rmse_mean_agb_dbh_sd_af<-rmse_mean_agb_dbh_sd_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais6_af<-dcast(mean_coef_agb_dbh_sd_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_wdba_af<-fread("mean_coef_agb_wdba_af.csv")
+rmse_mean_agb_wdba_af<-fread("rmse_mean_agb_wdba_af.csv")
+rmse_mean_agb_wdba_af<-rmse_mean_agb_wdba_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais7_af<-dcast(mean_coef_agb_wdba_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_prop_af<-fread("mean_coef_agb_prop_af.csv")
+rmse_mean_agb_prop_af<-fread("rmse_mean_agb_prop_af.csv")
+rmse_mean_agb_prop_af<-rmse_mean_agb_prop_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#je dois encore inverser pour avoir est en colonne, avec meancoef2
+essais8_af<-dcast(mean_coef_agb_prop_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#############################################################################################################################################################################
+
+essais[,unique(area)]
+essais[area=="north America",area:="north_america"]
+essais[area=="Oceania",area:="oceania"]
+
+essais2[,unique(area)]
+essais2[area=="North America",area:="north_america"]
+essais2[area=="Oceania",area:="oceania"]
+
+essais2bis[,unique(area)]
+essais2bis[area=="North America",area:="north_america"]
+essais2bis[area=="Oceania",area:="oceania"]
+
+essais3[,unique(area)]
+essais3[area=="North America",area:="north_america"]
+essais3[area=="Oceania",area:="oceania"]
+
+
+essais4[,unique(area)]
+essais4[area=="North America",area:="north_america"]
+essais4[area=="Oceania",area:="oceania"]
+
+essais4bis[,unique(area)]
+essais4bis[area=="North America",area:="north_america"]
+essais4bis[area=="Oceania",area:="oceania"]
+
+
+essais5[,unique(area)]
+essais5[area=="North America",area:="north_america"]
+essais5[area=="Oceania",area:="oceania"]
+
+essais6[,unique(area)]
+essais6[area=="North America",area:="north_america"]
+essais6[area=="Oceania",area:="oceania"]
+
+essais7[,unique(area)]
+essais7[area=="North America",area:="north_america"]
+essais7[area=="Oceania",area:="oceania"]
+
+rmse_mean_agb_all[area=="North America",area:="north_america"]
+rmse_mean_agb_all_af[area=="North America",area:="north_america"]
+rmse_mean_agb[area=="North America",area:="north_america"]
+rmse_mean_agb_af[area=="North America",area:="north_america"]
+rmse_mean_agb_dbh_sd[area=="North America",area:="north_america"]
+rmse_mean_agb_dbh_sd_af[area=="North America",area:="north_america"]
+rmse_mean_agb_sd[area=="North America",area:="north_america"]
+rmse_mean_agb_sd_af[area=="North America",area:="north_america"]
+rmse_mean_all_all[area=="north America",area:="north_america"]
+rmse_mean_all_all_af[area=="North America",area:="north_america"]
+rmse_mean_ba[area=="North America",area:="north_america"]
+rmse_mean_ba_af[area=="North America",area:="north_america"]
+rmse_mean_dbh[area=="North America",area:="north_america"]
+rmse_mean_dbh_af[area=="North America",area:="north_america"]
+rmse_mean_wdba[area=="North America",area:="north_america"]
+rmse_mean_wdba_af[area=="North America",area:="north_america"]
+rmse_mean_agb_wdba[area=="North America",area:="north_america"]
+rmse_mean_agb_wdba_af[area=="North America",area:="north_america"]
+
+rmse_mean_agb_all[area=="Oceania",area:="oceania"]
+rmse_mean_agb_all_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb[area=="Oceania",area:="oceania"]
+rmse_mean_agb_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb_dbh_sd[area=="Oceania",area:="oceania"]
+rmse_mean_agb_dbh_sd_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb_sd[area=="Oceania",area:="oceania"]
+rmse_mean_agb_sd_af[area=="Oceania",area:="oceania"]
+rmse_mean_all_all[area=="Oceania",area:="oceania"]
+rmse_mean_all_all_af[area=="Oceania",area:="oceania"]
+rmse_mean_ba[area=="Oceania",area:="oceania"]
+rmse_mean_ba_af[area=="Oceania",area:="oceania"]
+rmse_mean_dbh[area=="Oceania",area:="oceania"]
+rmse_mean_dbh_af[area=="Oceania",area:="oceania"]
+rmse_mean_wdba[area=="Oceania",area:="oceania"]
+rmse_mean_wdba_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb_wdba[area=="Oceania",area:="oceania"]
+rmse_mean_agb_wdba_af[area=="Oceania",area:="oceania"]
+
+rmse_mean_agb_all[,unique(area)]
+rmse_mean_agb_all_af[,unique(area)]
+rmse_mean_agb[,unique(area)]
+rmse_mean_agb_af[,unique(area)]
+rmse_mean_agb_dbh_sd[,unique(area)]
+rmse_mean_agb_dbh_sd_af[,unique(area)]
+rmse_mean_agb_sd[,unique(area)]
+rmse_mean_agb_sd_af[,unique(area)]
+rmse_mean_all_all[,unique(area)]
+rmse_mean_all_all_af[,unique(area)]
+rmse_mean_ba[,unique(area)]
+rmse_mean_ba_af[,unique(area)]
+rmse_mean_dbh[,unique(area)]
+rmse_mean_dbh_af[,unique(area)]
+rmse_mean_wdba[,unique(area)]
+rmse_mean_wdba_af[,unique(area)]
+rmse_mean_agb_wdba[,unique(area)]
+rmse_mean_agb_wdba_af[,unique(area)]
+
+essais_af[,unique(area)]
+essais2_af[,unique(area)]
+essais3_af[,unique(area)]
+essais2_af[,unique(area)]
+essais5_af[,unique(area)]
+essais6_af[,unique(area)]
+essais7_af[,unique(area)]
+essais2bis_af[,unique(area)]
+essais4bis_af[,unique(area)]
+
+essais[,unique(area)]
+essais2[,unique(area)]
+essais3[,unique(area)]
+essais4[,unique(area)]
+essais5[,unique(area)]
+essais6[,unique(area)]
+essais7[,unique(area)]
+essais2bis[,unique(area)]
+essais4bis[,unique(area)]
+```
+
+
+##Tables coef global
+```{r }
+
+essais[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais5[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais6[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais7[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+
+all_env_glob<-essais
+
+a<-essais6[var=="DBHqm"]
+b<-essais5[var=="SD"]
+c<-essais7[var=="WDba"]
+d<-essais4[var=="BA"]
+
+agb_att_glob<-rbind(a,b,c,d)
+
+agb_att_glob<-agb_att_glob[,.(from=var,to=sub_rep,coef=estimate,area)]
+all_env_glob<-all_env_glob[,.(from=var,to=sub_rep,coef=estimate,area)]
+
+#Oceania###################################################################################################################
+
+mean<-brut[Continent=="Oceania"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="Oceania"][!is.na(BA),sd(BA)]
+
+all_env_glob[to=="BA"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="BA"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[from=="BA"&area=="oceania",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Oceania"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="Oceania"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob[to=="DBHqm"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="DBHqm"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[from=="DBHqm"&area=="oceania",coef_brut:=coef/sd]
+
+mean-brut[Continent=="Oceania"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="Oceania"][!is.na(SD),sd(SD)]
+
+all_env_glob[to=="SD"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="SD"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[from=="SD"&area=="oceania",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Oceania"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="Oceania"][!is.na(WDba),sd(WDba)]
+
+all_env_glob[to=="WDba"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="WDba"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[from=="WDba"&area=="oceania",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+all_env_glob[to=="AGB_Feld_Pan"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Pan"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[to=="AGB_Feld_Pan"&area=="oceania",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob[to=="AGB_Feld_Cont"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Cont"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[to=="AGB_Feld_Cont"&area=="oceania",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob[to=="AGB_Feld_Reg"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Reg"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[to=="AGB_Feld_Reg"&area=="oceania",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="Oceania"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio1"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio12"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio15"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania",sd(slope)]
+
+all_env_glob[from=="slope"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania",sd(sand)]
+
+all_env_glob[from=="sand"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania",sd(org)]
+
+all_env_glob[from=="org"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania",sd(ph)]
+
+all_env_glob[from=="ph"&area=="oceania",coef_brut:=coef/sd]
+
+
+#North America###################################################################################################################
+
+mean<-brut[Continent=="North America"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="North America"][!is.na(BA),sd(BA)]
+
+all_env_glob[to=="BA"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="BA"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="BA"&area=="north_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="North America"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="North America"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob[to=="DBHqm"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="DBHqm"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="DBHqm"&area=="north_america",coef_brut:=coef/sd]
+
+mean-brut[Continent=="North America"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="North America"][!is.na(SD),sd(SD)]
+
+all_env_glob[to=="SD"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="SD"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="SD"&area=="north_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="North America"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="North America"][!is.na(WDba),sd(WDba)]
+
+all_env_glob[to=="WDba"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="WDba"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="WDba"&area=="north_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="North America"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="North America"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+all_env_glob[to=="AGB_Feld_Pan"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Pan"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="north_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="north_america",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="North America"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="North America"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob[to=="AGB_Feld_Cont"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Cont"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="north_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="north_america",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="North America"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="North America"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob[to=="AGB_Feld_Reg"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Reg"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="north_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="north_america",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="North America"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio1"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio12"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio15"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America",sd(slope)]
+all_env_glob[from=="slope"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America",sd(sand)]
+all_env_glob[from=="sand"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America",sd(org)]
+all_env_glob[from=="org"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America",sd(ph)]
+all_env_glob[from=="ph"&area=="north_america",coef_brut:=coef/sd]
+
+
+
+#South America###################################################################################################################
+
+mean<-brut[Continent=="South America"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="South America"][!is.na(BA),sd(BA)]
+
+all_env_glob[to=="BA"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="BA"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="BA"&area=="south_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="South America"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="South America"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob[to=="DBHqm"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="DBHqm"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="DBHqm"&area=="south_america",coef_brut:=coef/sd]
+
+mean-brut[Continent=="South America"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="South America"][!is.na(SD),sd(SD)]
+
+all_env_glob[to=="SD"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="SD"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="SD"&area=="south_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="South America"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="South America"][!is.na(WDba),sd(WDba)]
+
+all_env_glob[to=="WDba"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="WDba"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="WDba"&area=="south_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="South America"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="South America"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+all_env_glob[to=="AGB_Feld_Pan"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Pan"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="south_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="south_america",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="South America"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="South America"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob[to=="AGB_Feld_Cont"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Cont"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="south_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="south_america",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="South America"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="South America"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob[to=="AGB_Feld_Reg"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Reg"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="south_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="south_america",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="South America"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio1"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio12"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio15"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America",sd(slope)]
+all_env_glob[from=="slope"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America",sd(sand)]
+all_env_glob[from=="sand"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America",sd(org)]
+all_env_glob[from=="org"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America",sd(ph)]
+all_env_glob[from=="ph"&area=="south_america",coef_brut:=coef/sd]
+
+
+
+#Asia###################################################################################################################
+
+mean<-brut[Continent=="Eurasia"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="Eurasia"][!is.na(BA),sd(BA)]
+
+all_env_glob[to=="BA"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="BA"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="BA"&area=="asia",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Eurasia"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="Eurasia"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob[to=="DBHqm"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="DBHqm"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="DBHqm"&area=="asia",coef_brut:=coef/sd]
+
+mean-brut[Continent=="Eurasia"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="Eurasia"][!is.na(SD),sd(SD)]
+
+all_env_glob[to=="SD"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="SD"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="SD"&area=="asia",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Eurasia"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="Eurasia"][!is.na(WDba),sd(WDba)]
+
+all_env_glob[to=="WDba"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="WDba"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="WDba"&area=="asia",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+all_env_glob[to=="AGB_Feld_Pan"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Pan"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="asia",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="asia",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob[to=="AGB_Feld_Cont"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Cont"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="asia",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="asia",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob[to=="AGB_Feld_Reg"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Reg"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="asia",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="asia",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="Eurasia"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio1"&area=="asia",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Eurasia"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio12"&area=="asia",coef_brut:=coef/sd]
+sd<-brut[Continent=="Eurasia"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio15"&area=="asia",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Eurasia",sd(slope)]
+all_env_glob[from=="slope"&area=="asia",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Eurasia",sd(sand)]
+all_env_glob[from=="sand"&area=="asia",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Eurasia",sd(org)]
+all_env_glob[from=="org"&area=="asia",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Eurasia",sd(ph)]
+all_env_glob[from=="ph"&area=="asia",coef_brut:=coef/sd]
+
+
+
+#Africa###################################################################################################################
+
+mean<-brut[Continent=="Africa"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="Africa"][!is.na(BA),sd(BA)]
+
+all_env_glob[to=="BA"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="BA"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="BA"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="Africa"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob[to=="DBHqm"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="DBHqm"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="DBHqm"&area=="africa",coef_brut:=coef/sd]
+
+mean-brut[Continent=="Africa"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="Africa"][!is.na(SD),sd(SD)]
+
+all_env_glob[to=="SD"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="SD"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="SD"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="Africa"][!is.na(WDba),sd(WDba)]
+
+all_env_glob[to=="WDba"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="WDba"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="WDba"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+all_env_glob[to=="AGB_Feld_Pan"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Pan"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob[to=="AGB_Feld_Cont"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Cont"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob[to=="AGB_Feld_Reg"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Reg"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="Africa"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio1"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio12"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio15"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(slope)]
+all_env_glob[from=="slope"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(sand)]
+all_env_glob[from=="sand"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(org)]
+all_env_glob[from=="org"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(ph)]
+all_env_glob[from=="ph"&area=="africa",coef_brut:=coef/sd]
+
+
+
+#Africa controlée###################################################################################################################
+
+pion<-fread("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Work/MM/7_Modele_AGB_sans_montane/pourc_pionnier_Af.csv")
+
+result <- merge(brut, pion[, .(plot, Proportion)], by.x = "PLT_trois_bis", by.y = "plot", all.x = TRUE)
+result[is.na(Proportion)&Continent=="Africa",uniqueN(PLT_trois_bis)]#28 plots ont pas
+
+result<-result[Continent=="Africa"][!is.na(Proportion)]
+result<-result[!elevation.y>=1000]
+
+essais_af[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais5_af[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais6_af[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais7_af[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+
+all_env_glob_af<-essais_af
+
+a<-essais6_af[var=="DBHqm"]
+b<-essais5_af[var=="SD"]
+c<-essais7_af[var=="WDba"]
+d<-essais4_af[var=="BA"]
+
+agb_att_glob_af<-rbind(a,b,c,d)
+
+agb_att_glob_af<-agb_att_glob_af[,.(from=var,to=sub_rep,coef=estimate,area)]
+all_env_glob_af<-all_env_glob_af[,.(from=var,to=sub_rep,coef=estimate,area)]
+
+
+###################################################################################################################
+mean<-brut[Continent=="Africa"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="Africa"][!is.na(BA),sd(BA)]
+
+all_env_glob_af[to=="BA"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="BA"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[from=="BA"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="Africa"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob_af[to=="DBHqm"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="DBHqm"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[from=="DBHqm"&area=="africa",coef_brut:=coef/sd]
+
+mean-brut[Continent=="Africa"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="Africa"][!is.na(SD),sd(SD)]
+
+all_env_glob_af[to=="SD"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="SD"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[from=="SD"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="Africa"][!is.na(WDba),sd(WDba)]
+
+all_env_glob_af[to=="WDba"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="WDba"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[from=="WDba"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+
+mean_prop<-result[Continent=="Africa"][!is.na(Proportion),mean(Proportion)]
+sd_prop<-result[Continent=="Africa"][!is.na(Proportion),sd(Proportion)]
+
+
+all_env_glob_af[to=="AGB_Feld_Pan"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="AGB_Feld_Pan"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[to=="AGB_Feld_Pan"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob_af[to=="AGB_Feld_Pan"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob_af[to=="AGB_Feld_Cont"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="AGB_Feld_Cont"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[to=="AGB_Feld_Cont"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob_af[to=="AGB_Feld_Cont"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob_af[to=="AGB_Feld_Reg"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="AGB_Feld_Reg"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[to=="AGB_Feld_Reg"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob_af[to=="AGB_Feld_Reg"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="Africa"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob_af[from=="bio1"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob_af[from=="bio12"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob_af[from=="bio15"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(slope)]
+all_env_glob_af[from=="slope"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(sand)]
+all_env_glob_af[from=="sand"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(org)]
+all_env_glob_af[from=="org"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(ph)]
+all_env_glob_af[from=="ph"&area=="africa",coef_brut:=coef/sd]
+
+
+sd<-result[Continent=="Africa",sd(Proportion)]
+all_env_glob_af[from=="Proportion"&area=="africa",coef_brut:=coef/sd]
+
+
+```
+
+#Export table coef global
+```{r }
+
+agb_att_glob<-rbind(agb_att_glob,agb_att_glob_af[,area:="africa_cont"])
+#fwrite(agb_att_glob[,.(from,to,area,coef_brut,coef,coef_sd,coef_pourc)],"agb_att_glob.csv")
+
+#juste garder agb!!
+all_env_glob<-rbind(all_env_glob,all_env_glob_af[,area:="africa_cont"])
+all_env_glob_bis<-all_env_glob[!to=="BA"&!to=="WDba"&!to=="DBHqm"&!to=="SD"]
+#fwrite(all_env_glob[,.(from,to,area,coef_brut,coef,coef_sd,coef_pourc)],"all_env_glob.csv")
+
+```
+
+
+#Table RMSE des global : att sur AGB et env sur agb
+```{r }
+
+#pour env  sur agb (et sur att)
+rmse_mean_all_all
+rmse_mean_all_all_af
+rmse_mean_all_all<-rbind(rmse_mean_all_all,rmse_mean_all_all_af[,area:="africa_cont"])
+rmse_mean_all_all_bis<-rmse_mean_all_all[!sub_rep=="BA"&!sub_rep=="WDba"&!sub_rep=="DBH_qm"&!sub_rep=="SD"]
+```
+
