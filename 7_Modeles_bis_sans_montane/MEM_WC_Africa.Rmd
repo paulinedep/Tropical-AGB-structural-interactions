@@ -1,0 +1,1025 @@
+---
+title: "Linear Multiple Regression + Spatial structure"
+author: "Pauline Depoortere"
+date: "02/12/2022"
+output: pdf_document
+---
+
+#1. Datatable preparation 
+
+I create a table in which, for my 2073 plots, there are my response and predictive variables (those chosen) from different sources of climate data.
+
+Note: For demonstration purposes, the percentage of pioneer species is randomly generated here. In the actual dataset, this variable was derived from the CoForTraits database (https://dataverse.cirad.fr/dataset.xhtml?persistentId=doi:10.18167/DVN1/Y2BIZK), which compiles trait data for Central African tree species. The two R scripts used to calculate this metric from the original data are as "4_FieldDataInventories_Analyse_Temperament.R" and "5_PlotsMetrics_Analyse_Temperament.R".
+
+
+```{r include=FALSE}
+
+rm(list=ls()) 
+
+
+setwd("C:/Users/u237004/Documents/1_Boulot_SC/2_Papier Pan/Final_Nature/Code/7_Modeles_bis_sans_montane/")
+#Libraries
+library(data.table) #is used to import and manipulate tables
+library(broom)
+library(ggplot2)
+#library(dotwhisker) 
+library(dplyr)
+
+library(adespatial) 
+library(spdep)
+library(vegan)
+library(textshape) 
+
+library(janitor)
+
+#Set the seed (pseudo-random number generator), for exact reproducibility
+set.seed(2023)
+
+#Load the data
+data<-fread("Pantropical_dataset_2076plots_V2_N_55_1_SOIL.csv")
+# pion<-fread("pourc_pionnier_Af.csv")
+# 
+# result <- merge(data, pion[, .(plot, Proportion)], by.x = "PLT_trois_bis", by.y = "plot", all.x = TRUE)
+# result[is.na(Proportion)&Continent=="Africa",uniqueN(PLT_trois_bis)]
+# 
+# result<-result[Continent=="Africa"][!is.na(Proportion)]
+# 
+# data<-result
+
+##FOR DEMONSTRATION########################################################################
+data[, Proportion := runif(.N, min = 0, max = 100)]
+########################################################################
+
+
+summary(data)
+#class(data)
+
+data<-data[!elevation.y>=1000]
+data<-data[!is.na(Bio1_WC)]
+```
+
+Comments: I have NA's for Year2. Otherwise there are no NAs in the response and predictive variables ;) 
+##1.1. Number of plots per continent
+
+```{r echo=FALSE}
+data[,.(.N),by=Continent]
+```
+
+
+
+#2. Spatial structure 
+
+### Check that each site is only present once:
+
+```{r}
+uniqueN(data, by="PLT_trois_bis")
+```
+
+### Quick visualisation of the sites in space:
+
+```{r}
+data %>% 
+  ggplot(aes(LON, LAT)) +
+  geom_point() +
+  coord_fixed() +
+  theme_classic()
+```
+###!!! Choice of the data climate source
+
+```{r}
+brut=data
+data=data[,.(PLT_trois_bis,PLT_deux_bis,Ps,LAT,LON,Continent,Year,DBHqm,BA,SD,WD,WDba,AGB_Chave_eq7,AGB_Feld_Pan,AGB_Feld_Cont,AGB_Feld_Reg,sand,org,ph,slope,Bio1=Bio1_WC,Bio12=Bio12_WC,Bio15=Bio15_WC,Proportion)]
+
+##Afrique 
+data_Af<-data[Continent=="Africa",]
+class(data_Af)
+
+
+##AGB
+
+
+##Pantropic
+data_AGB_Cont<-data[!is.na(AGB_Feld_Cont)]
+##Africa
+data_Af_AGB_Cont<-data_AGB_Cont[Continent=="Africa",]
+class(data_Af)
+
+#Pantropic
+data_AGB_Reg<-data[!is.na(AGB_Feld_Reg)]
+
+##Afrique 
+data_Af_AGB_Reg<-data_AGB_Reg[Continent=="Africa",]
+class(data_Af)
+
+rm(data)
+rm(data_AGB_Reg)
+rm(data_AGB_Cont)
+
+```
+
+
+##!!! Standardization of all predictor and/or response variables
+
+
+```{r include=FALSE}
+
+##Africa
+data_Af[,Bio1:=as.vector(scale(Bio1, center=TRUE, scale=TRUE)),]
+data_Af[,Bio15:=as.vector(scale(Bio15, center=TRUE, scale=TRUE)),]
+data_Af[,Bio12:=as.vector(scale(Bio12, center=TRUE, scale=TRUE)),]
+
+data_Af[,sand:=as.vector(scale(sand, center=TRUE, scale=TRUE)),]
+data_Af[,org:=as.vector(scale(org, center=TRUE, scale=TRUE)),]
+data_Af[,ph:=as.vector(scale(ph, center=TRUE, scale=TRUE)),]
+
+data_Af[,slope:=as.vector(scale(slope, center=TRUE, scale=TRUE)),]
+data_Af[,Proportion:=as.vector(scale(Proportion, center=TRUE, scale=TRUE)),]
+
+
+##AGB Cont#############################################################################################
+
+##Africa
+data_Af_AGB_Cont[,Bio1:=as.vector(scale(Bio1, center=TRUE, scale=TRUE)),]
+data_Af_AGB_Cont[,Bio15:=as.vector(scale(Bio15, center=TRUE, scale=TRUE)),]
+data_Af_AGB_Cont[,Bio12:=as.vector(scale(Bio12, center=TRUE, scale=TRUE)),]
+
+data_Af_AGB_Cont[,sand:=as.vector(scale(sand, center=TRUE, scale=TRUE)),]
+data_Af_AGB_Cont[,org:=as.vector(scale(org, center=TRUE, scale=TRUE)),]
+data_Af_AGB_Cont[,ph:=as.vector(scale(ph, center=TRUE, scale=TRUE)),]
+
+data_Af_AGB_Cont[,slope:=as.vector(scale(slope, center=TRUE, scale=TRUE)),]
+data_Af_AGB_Cont[,Proportion:=as.vector(scale(Proportion, center=TRUE, scale=TRUE)),]
+
+##AGB Reg##############################################################################################
+
+##Africa
+data_Af_AGB_Reg[,Bio1:=as.vector(scale(Bio1, center=TRUE, scale=TRUE)),]
+data_Af_AGB_Reg[,Bio15:=as.vector(scale(Bio15, center=TRUE, scale=TRUE)),]
+data_Af_AGB_Reg[,Bio12:=as.vector(scale(Bio12, center=TRUE, scale=TRUE)),]
+
+data_Af_AGB_Reg[,sand:=as.vector(scale(sand, center=TRUE, scale=TRUE)),]
+data_Af_AGB_Reg[,org:=as.vector(scale(org, center=TRUE, scale=TRUE)),]
+data_Af_AGB_Reg[,ph:=as.vector(scale(ph, center=TRUE, scale=TRUE)),]
+
+data_Af_AGB_Reg[,slope:=as.vector(scale(slope, center=TRUE, scale=TRUE)),]
+data_Af_AGB_Reg[,Proportion:=as.vector(scale(Proportion, center=TRUE, scale=TRUE)),]
+```
+
+
+##2.1.Generation of a set of SWMs 
+
+... from which the optimisation of the selection of both the SWM and the subset of MEM variables within it will be carried out:
+
+
+We will test the two most contrasting graph-based criteria of connectivity as we have a irregular design (excluding the Delaunay triangulation to avoid edge effect issues), with a Gabriel graph and a minimum spanning tree. We will test these connectivity matrices without weighting the connexions and weighting them by the linear decreasing function of distance provided in the function (the further apart, the less two sites are connected or "exchange information").
+
+
+```{r}
+#source("listw.candidates_modif.R")
+listw.candidates_modif<-function(coord, 
+                               style = "B", 
+                               nb = c("del", "gab", "rel", "mst", "pcnm", "dnear"),
+                               d1 = 0, 
+                               d2,
+                               weights = c("binary", "flin", "fup", "fdown"),
+                               y_fdown = 5, 
+                               y_fup = 0.5,
+                               nnmult = 10) {
+  
+  nb <- match.arg(nb, several.ok = TRUE)
+  weights <- match.arg(weights, several.ok = TRUE)
+  
+  
+  if (length(nb) == 0) 
+    stop("No connectivity matrix selected")
+  if (length(weights) == 0) 
+    stop("No weighting matrix selected")
+  
+  if (anyNA(coord)) stop("NA entries in coord")
+  
+  coord.mat <- as.matrix(coord)
+  xy.d1 <- dist(coord.mat)  
+  
+  res <- list()
+  ## Manage the case of pcnm separately (as it is not concerned by weights)
+  if ("pcnm" %in% nb) {
+    f <- function(D, t) { 1 - (D / (4 * t))^2 }           # PCNM criterion
+    lowlim <- give.thresh(xy.d1)
+    matB <- dnearneigh(x = coord.mat, d1 = 0, d2 = (1 + sqrt(.Machine$double.eps)) * lowlim) ## add espsilon to ensure that all sites have neighbors
+    res[[1]] <- nb2listw(matB, style = style, 
+                         glist = lapply(nbdists(matB, coord.mat),
+                                        f, t = lowlim))
+    names(res) <- "DBEM_PCNM"
+    nb <- nb[-match("pcnm", nb)]
+    if (length(nb) == 0)
+      return(res)
+  }
+  
+  
+  .addweights <- function(nb.object, nb.dist, coord.mat, weights, style, Prefix,
+                          y_fdown, y_fup) {
+    ## this utility function returns a list of listw objects created 
+    ## using a single nb.object and several weights
+    res <- list()
+    res.names <- c()
+    f1 <- function(D, dmax)     { 1 - (D/dmax) }       # Linear function
+    f2 <- function(D, dmax, y)  { 1 - (D/dmax)^y }     # Concave-down function
+    f3 <- function(D, y)        { 1 / D^y }            # Concave-up function
+    
+    if ("binary" %in% weights) {
+      res <- c(res, list(nb2listw(nb.object, style = style)))
+      res.names <- c(res.names, paste(Prefix, "Binary", sep = "_"))
+    }
+    
+    if ("flin" %in% weights) {
+      max.del <- max(unlist(nbdists(nb.object, coord.mat)))
+      
+      res <- c(res, list(nb2listw(nb.object, style = style, 
+                                  glist = lapply(nb.dist, f1, dmax = max.del))))
+      res.names <- c(res.names, paste(Prefix, "Linear", sep = "_"))
+    }
+    
+    if ("fdown" %in% weights) {
+      max.del <- max(unlist(nbdists(nb.object, coord.mat)))
+      for (i in y_fdown) {
+        res <- c(res, list(nb2listw(nb.object, style = style, 
+                                    glist = lapply(nbdists(nb.object, coord.mat), 
+                                                   f2, y = i, dmax = max.del))))
+        res.names <- c(res.names, paste(Prefix, "Down", i, sep = "_"))
+        
+      }
+    }
+    
+    
+    if ("fup" %in% weights) {
+      for (i in y_fup) {
+        res <- c(res, list(nb2listw(nb.object, style = style, 
+                                    glist = lapply(nbdists(nb.object, coord.mat), 
+                                                   f3, y = i))))
+        res.names <- c(res.names, paste(Prefix, "Up", i, sep = "_"))
+        
+      }
+    }
+    
+    names(res) <- res.names
+    return(res)
+  }
+  
+  
+  
+  if ("del" %in% nb) {
+    nb.object <- tri2nb(coord.mat)
+    nb.dist <- nbdists(nb.object, coord.mat)
+    res <- c(res, .addweights(nb.object, nb.dist, coord.mat, weights, style, 
+                              Prefix = "Delaunay", y_fdown, y_fup))
+  }
+  
+  
+  if ("gab" %in% nb) {
+    nb.object <- graph2nb(gabrielneigh(coord.mat, nnmult = nnmult), sym = TRUE)
+    nb.dist <- nbdists(nb.object, coord.mat)
+    res <- c(res, .addweights(nb.object, nb.dist, coord.mat, weights, style, 
+                              Prefix = "Gabriel", y_fdown, y_fup))
+  }
+  
+  
+  if ("rel" %in% nb) {
+    nb.object <- graph2nb(relativeneigh(coord.mat, nnmult = nnmult), sym = TRUE)
+    nb.dist <- nbdists(nb.object, coord.mat)
+    res <- c(res, .addweights(nb.object, nb.dist, coord.mat, weights, style, 
+                              Prefix = "Relative", y_fdown, y_fup))
+  }
+  
+  if ("mst" %in% nb) {
+    nb.object <- mst.nb(xy.d1)
+    nb.dist <- nbdists(nb.object, coord.mat)
+    res <- c(res, .addweights(nb.object, nb.dist, coord.mat, weights, style, 
+                              Prefix = "MST", y_fdown, y_fup))
+  }
+  
+  if ("dnear" %in% nb) {
+    # If "dnear" and no value specified for d2, then d2 is set to be the
+    # largest edge of the minimum spanning tree (minimum distance keeping all points connected)
+    if (missing(d2))
+      d2 <- (1 + sqrt(.Machine$double.eps)) * give.thresh(xy.d1)
+    
+    nb.dnear <- lapply(d2, dnearneigh, x = coord.mat, d1 = d1)
+    for (nb.i in 1:length(nb.dnear)) {
+      nb.object <- nb.dnear[[nb.i]]
+      nb.dist <- nbdists(nb.object, coord.mat)
+      res <- c(res, .addweights(nb.object, nb.dist, coord.mat, weights, style, 
+                                Prefix = paste("Dnear", round(d2[nb.i], 2), sep = ""), y_fdown, y_fup))
+      
+      
+    }
+    
+  }
+  
+  return(res)
+  
+}
+
+
+
+listw.candidates<-listw.candidates_modif
+
+```
+
+
+
+```{r}
+
+
+#########################################################################################################################################################
+##Africa
+#########################################################################################################################################################
+
+###Table of spatial coordinates:
+xy_Af <- data_Af %>% 
+  column_to_rownames("PLT_trois_bis") %>% 
+  dplyr::select(LON, LAT)
+
+###SWMs
+swm_candidates_Af <- listw.candidates(xy_Af, nb = c('gab', 'mst'), weights = c('binary', 'flin'))
+rm(xy_Af)
+
+
+#########################################################################################################################################################
+##AGB_Cont
+#########################################################################################################################################################
+
+
+##Africa
+
+###Table of spatial coordinates:
+xy_Af_AGB_Cont <- data_Af_AGB_Cont %>% 
+  column_to_rownames("PLT_trois_bis") %>% 
+  dplyr::select(LON, LAT)
+
+###SWMs
+swm_candidates_Af_AGB_Cont <- listw.candidates(xy_Af_AGB_Cont, nb = c('gab', 'mst'), weights = c('binary', 'flin'))
+rm(xy_Af_AGB_Cont)
+
+#########################################################################################################################################################
+##AGB_Reg
+#########################################################################################################################################################
+
+
+
+##Africa
+
+###Table of spatial coordinates:
+xy_Af_AGB_Reg <- data_Af_AGB_Reg %>% 
+  column_to_rownames("PLT_trois_bis") %>% 
+  dplyr::select(LON, LAT)
+
+###SWMs
+swm_candidates_Af_AGB_Reg <- listw.candidates(xy_Af_AGB_Reg, nb = c('gab', 'mst'), weights = c('binary', 'flin'))
+rm(xy_Af_AGB_Reg)
+
+
+
+```
+
+Comments : Message for Africa "zero sum general weightszero sum general weights" ? David Bauman said to not take this message into account ;)
+
+
+##2.2. MEMs : Optimisation procedure (Bauman et al. 2018, Ecology)
+
+A SWM as well as a subset of MEM variables need to be selected at this stage.
+As discussed in Bauman et al. (2018, Ecography), the univariate / multivariate nature of the 
+response data as well as the type of question / objective should guide the choice of the type of 
+spatial eigenvector selection method.
+
+###a) MIR : Minimum number of components
+
+In the present case, we will use the MIR criterion (see Ecography paper), hence favoring the minimisation of the model residual spatial autocorrelation using the smallest subset of spatial predictors possible. 
+
+
+#####DBHqm :
+
+```{r}
+
+###################################################################################################################
+###################################################################################################################
+###################################################################################################################
+##Africa
+
+###MLR
+DBHqmAf=lm(DBHqm~Bio1+Bio12+Bio15+slope+sand+ph+org+Proportion, data=data_Af)
+summary(DBHqmAf)
+
+###Residuals
+res_DBHqmAf<-residuals(DBHqmAf)
+
+###Get the best MEMs
+select_DBHqmAf<-listw.select(res_DBHqmAf, swm_candidates_Af, MEM.autocor = "positive", 
+                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+select_DBHqmAf$best.id#4
+select_DBHqmAf$best$MEM.select
+select_DBHqmAf$candidates$N.var[select_DBHqmAf$best.id]# 8 MEMs
+select_DBHqmAf$candidates
+
+bestMEM_DBHqmAf<-bind_cols(data_Af %>%
+                      dplyr::select(DBHqm,Bio1,Bio12,Bio15,slope,sand,ph,org,Proportion),
+                      select_DBHqmAf$best$MEM.select) 
+
+
+rm(select_DBHqmAf)
+
+
+
+
+rm(res_DBHqmAf)
+
+
+
+```
+
+#####BA :
+
+```{r}
+
+##Africa
+
+###MLR
+BAAf=lm(BA~Bio1+Bio12+Bio15+slope+sand+ph+org+Proportion, data=data_Af)
+summary(BAAf)
+
+###Residuals
+res_BAAf<-residuals(BAAf)
+
+###Get the best MEMs
+select_BAAf<-listw.select(res_BAAf, swm_candidates_Af, MEM.autocor = "positive", 
+                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+select_BAAf$best.id#4
+select_BAAf$best$MEM.select
+select_BAAf$candidates$N.var[select_BAAf$best.id]# 8 MEMs
+select_BAAf$candidates
+
+bestMEM_BAAf<-bind_cols(data_Af %>%
+                      dplyr::select(BA,Bio1,Bio12,Bio15,slope,sand,ph,org,Proportion),
+                      select_BAAf$best$MEM.select) 
+
+rm(select_BAAf)
+
+
+
+
+rm(res_BAAf)
+
+
+```
+
+#####SD :
+
+```{r}
+
+##Africa
+
+###MLR
+SDAf=lm(SD~Bio1+Bio12+Bio15+slope+sand+ph+org+Proportion, data=data_Af)
+summary(SDAf)
+
+###Residuals
+res_SDAf<-residuals(SDAf)
+
+###Get the best MEMs
+select_SDAf<-listw.select(res_SDAf, swm_candidates_Af, MEM.autocor = "positive", 
+                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+select_SDAf$best.id#4
+select_SDAf$best$MEM.select
+select_SDAf$candidates$N.var[select_SDAf$best.id]# 8 MEMs
+select_SDAf$candidates
+
+bestMEM_SDAf<-bind_cols(data_Af %>%
+                      dplyr::select(SD,Bio1,Bio12,Bio15,slope,sand,ph,org,Proportion),
+                      select_SDAf$best$MEM.select) 
+
+
+rm(select_SDAf)
+
+
+
+rm(res_SDAf)
+
+```
+
+#####WDba :
+
+```{r}
+
+##Africa
+
+###MLR
+WDbaAf=lm(WDba~Bio1+Bio12+Bio15+slope+sand+ph+org+Proportion, data=data_Af)
+summary(WDbaAf)
+
+###Residuals
+res_WDbaAf<-residuals(WDbaAf)
+
+###Get the best MEMs
+select_WDbaAf<-listw.select(res_WDbaAf, swm_candidates_Af, MEM.autocor = "positive", 
+                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+select_WDbaAf$best.id#4
+select_WDbaAf$best$MEM.select
+select_WDbaAf$candidates$N.var[select_WDbaAf$best.id]# 8 MEMs
+select_WDbaAf$candidates
+
+bestMEM_WDbaAf<-bind_cols(data_Af %>%
+                      dplyr::select(WDba,Bio1,Bio12,Bio15,slope,sand,ph,org,Proportion),
+                      select_WDbaAf$best$MEM.select) 
+
+
+rm(select_WDbaAf)
+
+
+
+rm(res_WDbaAf)
+
+```
+
+
+#####AGB Feld Pan : 
+
+```{r}
+##Africa
+
+###MLR
+AGB_Feld_PanAf=lm(AGB_Feld_Pan~Bio1+Bio12+Bio15+slope+sand+ph+org+Proportion, data=data_Af)
+summary(AGB_Feld_PanAf)
+
+###Residuals
+res_AGB_Feld_PanAf<-residuals(AGB_Feld_PanAf)
+
+###Get the best MEMs
+select_AGB_Feld_PanAf<-listw.select(res_AGB_Feld_PanAf, swm_candidates_Af, MEM.autocor = "positive", 
+                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+select_AGB_Feld_PanAf$best.id#4
+select_AGB_Feld_PanAf$best$MEM.select
+select_AGB_Feld_PanAf$candidates$N.var[select_AGB_Feld_PanAf$best.id]# 8 MEMs
+select_AGB_Feld_PanAf$candidates
+
+bestMEM_AGB_Feld_PanAf<-bind_cols(data_Af %>%
+                      dplyr::select(AGB_Feld_Pan,Bio1,Bio12,Bio15,slope,sand,ph,org,Proportion),
+                      select_AGB_Feld_PanAf$best$MEM.select) 
+
+
+
+
+
+rm(select_AGB_Feld_PanAf)
+
+
+rm(res_AGB_Feld_PanAf)
+
+```
+
+#####AGB Feld Cont : 
+
+```{r}
+
+##Africa
+
+###MLR
+AGB_Feld_ContAf=lm(AGB_Feld_Cont~Bio1+Bio12+Bio15+slope+sand+ph+org+Proportion, data=data_Af_AGB_Cont)
+summary(AGB_Feld_ContAf)
+
+###Residuals
+res_AGB_Feld_ContAf<-residuals(AGB_Feld_ContAf)
+
+###Get the best MEMs
+select_AGB_Feld_ContAf<-listw.select(res_AGB_Feld_ContAf, swm_candidates_Af_AGB_Cont, MEM.autocor = "positive", 
+                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+select_AGB_Feld_ContAf$best.id#4
+select_AGB_Feld_ContAf$best$MEM.select
+select_AGB_Feld_ContAf$candidates$N.var[select_AGB_Feld_ContAf$best.id]# 8 MEMs
+select_AGB_Feld_ContAf$candidates
+
+bestMEM_AGB_Feld_ContAf<-bind_cols(data_Af_AGB_Cont %>%
+                      dplyr::select(AGB_Feld_Cont,Bio1,Bio12,Bio15,slope,sand,ph,org,Proportion),
+                      select_AGB_Feld_ContAf$best$MEM.select) 
+
+
+
+
+rm(select_AGB_Feld_ContAf)
+
+
+
+rm(res_AGB_Feld_ContAf)
+```
+
+#####AGB Feld Reg : 
+
+```{r}
+##Africa
+
+###MLR
+AGB_Feld_RegAf=lm(AGB_Feld_Reg~Bio1+Bio12+Bio15+slope+sand+ph+org+Proportion, data=data_Af_AGB_Reg)
+summary(AGB_Feld_RegAf)
+
+###Residuals
+res_AGB_Feld_RegAf<-residuals(AGB_Feld_RegAf)
+
+###Get the best MEMs
+select_AGB_Feld_RegAf<-listw.select(res_AGB_Feld_RegAf, swm_candidates_Af_AGB_Reg, MEM.autocor = "positive", 
+                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+select_AGB_Feld_RegAf$best.id#4
+select_AGB_Feld_RegAf$best$MEM.select
+select_AGB_Feld_RegAf$candidates$N.var[select_AGB_Feld_RegAf$best.id]# 8 MEMs
+select_AGB_Feld_RegAf$candidates
+
+bestMEM_AGB_Feld_RegAf<-bind_cols(data_Af_AGB_Reg %>%
+                      dplyr::select(AGB_Feld_Reg,Bio1,Bio12,Bio15,slope,sand,ph,org,Proportion),
+                      select_AGB_Feld_RegAf$best$MEM.select) 
+
+
+rm(select_AGB_Feld_RegAf)
+
+
+
+
+rm(res_AGB_Feld_RegAf)
+
+```
+
+##Export
+```{r include=FALSE}
+fwrite(bestMEM_DBHqmAf,"bestMEM_DBHqmAf_WC_af.csv")
+
+fwrite(bestMEM_BAAf,"bestMEM_BAAf_WC_af.csv")
+
+fwrite(bestMEM_SDAf,"bestMEM_SDAf_WC_af.csv")
+
+fwrite(bestMEM_WDbaAf,"bestMEM_WDbaAf_WC_af.csv")
+
+fwrite(bestMEM_AGB_Feld_PanAf,"bestMEM_AGB_Feld_PanAf_WC_af.csv")
+
+fwrite(bestMEM_AGB_Feld_ContAf,"bestMEM_AGB_Feld_ContAf_WC_af.csv")
+
+fwrite(bestMEM_AGB_Feld_RegAf,"bestMEM_AGB_Feld_RegAf_WC_af.csv")
+```
+
+##Importation
+```{r include=FALSE}
+#bestMEM_DBHqmAf<-fread("bestMEM_DBHqmAf_WC_af.csv")
+
+#bestMEM_BAAf<-fread("bestMEM_BAAf_WC_af.csv")
+
+#bestMEM_SDAf<-fread("bestMEM_SDAf_WC_af.csv")
+
+#bestMEM_WDbaAf<-fread("bestMEM_WDbaAf_WC_af.csv")
+
+#bestMEM_AGB_Feld_PanAf<-fread("bestMEM_AGB_Feld_PanAf_WC_af.csv")
+
+#bestMEM_AGB_Feld_ContAf<-fread("bestMEM_AGB_Feld_ContAf_WC_af.csv")
+#bestMEM_AGB_Feld_RegAf<-fread("bestMEM_AGB_Feld_RegAf_WC_af.csv")
+```
+
+#3. Multiple Linear Regression 
+
+##3.1. DBHqm
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+
+##Africa
+
+#
+DBHqmAf_F=lm(DBHqm~., data=bestMEM_DBHqmAf)
+summary(DBHqmAf_F)
+
+rse<-summary(DBHqmAf_F)$sigma
+r_squared<-summary(DBHqmAf_F)$r.squared
+mean<-data_Af[,mean(DBHqm),]
+results<-tidy(DBHqmAf_F, conf.int = TRUE)
+
+setDT(results)
+results<-as.data.table(t(results[2:9][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+results[,`:=`(rep="SC",sub_rep="DBH_qm",area="africa",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)]
+results$est<-as.character(results$est)
+results[1,est:="estimate"]
+results[2,est:="std.error"]
+results[3,est:="statistic"]
+results[4,est:="p.value"]
+results[5,est:="conf.low"]
+results[6,est:="conf.high"]
+end<-rbind(results[,.(rep, sub_rep, area,Bio1, Bio12, Bio15, slope, sand, ph, org,Proportion, r_squared,RMSE,est),])
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+test<-as.data.table(as.numeric(summary(DBHqmAf_F)$coefficients[,4]))
+test<-test[2:9]
+test[, `:=`(rep = "SC" , sub_rep = "DBHqm", area="africa",  pvalue=V1,var_pred=c("Bio1","Bio12","Bio15","slope","sand","ph","org","Proportion"))][,V1:=NULL,]
+end2<-test
+rm(test)
+```
+
+
+##3.2. BA
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+##Africa
+
+#
+BAAf_F=lm(BA~., data=bestMEM_BAAf)
+summary(BAAf_F)
+
+rse<-summary(BAAf_F)$sigma
+r_squared<-summary(BAAf_F)$r.squared
+mean<-data_Af[,mean(BA),]
+results<-tidy(BAAf_F, conf.int = TRUE)
+
+setDT(results)
+results<-as.data.table(t(results[2:9][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+results[,`:=`(rep="SC",sub_rep="BA",area="africa",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)]
+results$est<-as.character(results$est)
+results[1,est:="estimate"]
+results[2,est:="std.error"]
+results[3,est:="statistic"]
+results[4,est:="p.value"]
+results[5,est:="conf.low"]
+results[6,est:="conf.high"]
+end<-rbind(end,results[,.(rep, sub_rep, area,  Bio1, Bio12, Bio15, slope, sand, ph, org,Proportion, r_squared,RMSE,est),])
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+test<-as.data.table(as.numeric(summary(BAAf_F)$coefficients[,4]))
+test<-test[2:9]
+test[, `:=`(rep = "SC" , sub_rep = "BA", area="africa",  pvalue=V1,var_pred=c("Bio1","Bio12","Bio15","slope","sand","ph","org","Proportion"))][,V1:=NULL,]
+end2<-rbind(end2,test)
+rm(test)
+
+
+
+```
+
+
+##3.3. SD
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+##Africa
+
+#
+SDAf_F=lm(SD~., data=bestMEM_SDAf)
+summary(SDAf_F)
+
+rse<-summary(SDAf_F)$sigma
+r_squared<-summary(SDAf_F)$r.squared
+mean<-data_Af[,mean(SD),]
+results<-tidy(SDAf_F, conf.int = TRUE)
+
+setDT(results)
+results<-as.data.table(t(results[2:9][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+results[,`:=`(rep="SC",sub_rep="SD",area="africa",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)]
+results$est<-as.character(results$est)
+results[1,est:="estimate"]
+results[2,est:="std.error"]
+results[3,est:="statistic"]
+results[4,est:="p.value"]
+results[5,est:="conf.low"]
+results[6,est:="conf.high"]
+end<-rbind(end,results[,.(rep, sub_rep, area,  Bio1, Bio12, Bio15, slope, sand, ph, org,Proportion,r_squared,RMSE,est),])
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+test<-as.data.table(as.numeric(summary(SDAf_F)$coefficients[,4]))
+test<-test[2:9]
+test[, `:=`(rep = "SC" , sub_rep = "SD", area="africa",  pvalue=V1,var_pred=c("Bio1","Bio12","Bio15","slope","sand","ph","org","Proportion"))][,V1:=NULL,]
+end2<-rbind(end2,test)
+rm(test)
+
+
+```
+
+##3.4. WDba
+
+###a)  MLR Model with MEMs
+
+```{r include=FALSE}
+
+
+##Africa
+
+#
+WDbaAf_F=lm(WDba~., data=bestMEM_WDbaAf)
+summary(WDbaAf_F)
+
+rse<-summary(WDbaAf_F)$sigma
+r_squared<-summary(WDbaAf_F)$r.squared
+mean<-data_Af[,mean(WDba),]
+results<-tidy(WDbaAf_F, conf.int = TRUE)
+
+setDT(results)
+results<-as.data.table(t(results[2:9][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+results[,`:=`(rep="SC",sub_rep="WDba",area="africa",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)]
+results$est<-as.character(results$est)
+results[1,est:="estimate"]
+results[2,est:="std.error"]
+results[3,est:="statistic"]
+results[4,est:="p.value"]
+results[5,est:="conf.low"]
+results[6,est:="conf.high"]
+end<-rbind(end,results[,.(rep, sub_rep, area,  Bio1, Bio12, Bio15, slope, sand, ph, org,Proportion,r_squared,RMSE,est),])
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+test<-as.data.table(as.numeric(summary(WDbaAf_F)$coefficients[,4]))
+test<-test[2:9]
+test[, `:=`(rep = "SC" , sub_rep = "WDba", area="africa",  pvalue=V1,var_pred=c("Bio1","Bio12","Bio15","slope","sand","ph","org","Proportion"))][,V1:=NULL,]
+end2<-rbind(end2,test)
+rm(test)
+
+
+```
+
+
+
+##3.6. AGB_Feld_Pan
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+##Africa
+
+#
+AGB_Feld_PanAf_F=lm(AGB_Feld_Pan~., data=bestMEM_AGB_Feld_PanAf)
+summary(AGB_Feld_PanAf_F)
+
+rse<-summary(AGB_Feld_PanAf_F)$sigma
+r_squared<-summary(AGB_Feld_PanAf_F)$r.squared
+mean<-data_Af[,mean(AGB_Feld_Pan),]
+results<-tidy(AGB_Feld_PanAf_F, conf.int = TRUE)
+
+setDT(results)
+results<-as.data.table(t(results[2:9][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+results[,`:=`(rep="AGB",sub_rep="AGB_Feld_Pan",area="africa",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)]
+results$est<-as.character(results$est)
+results[1,est:="estimate"]
+results[2,est:="std.error"]
+results[3,est:="statistic"]
+results[4,est:="p.value"]
+results[5,est:="conf.low"]
+results[6,est:="conf.high"]
+end<-rbind(end,results[,.(rep, sub_rep, area,  Bio1, Bio12, Bio15, slope, sand, ph, org,Proportion,r_squared,RMSE,est),])
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+test<-as.data.table(as.numeric(summary(AGB_Feld_PanAf_F)$coefficients[,4]))
+test<-test[2:9]
+test[, `:=`(rep = "AGB" , sub_rep = "AGB_Feld_Pan", area="africa",  pvalue=V1,var_pred=c("Bio1","Bio12","Bio15","slope","sand","ph","org","Proportion"))][,V1:=NULL,]
+end2<-rbind(end2,test)
+rm(test)
+
+
+
+
+```
+
+
+##3.7. AGB_Feld_Cont
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+##Africa
+
+#
+AGB_Feld_ContAf_F=lm(AGB_Feld_Cont~., data=bestMEM_AGB_Feld_ContAf)
+summary(AGB_Feld_ContAf_F)
+
+rse<-summary(AGB_Feld_ContAf_F)$sigma
+r_squared<-summary(AGB_Feld_ContAf_F)$r.squared
+mean<-data_Af_AGB_Cont[,mean(AGB_Feld_Cont),]
+results<-tidy(AGB_Feld_ContAf_F, conf.int = TRUE)
+
+setDT(results)
+results<-as.data.table(t(results[2:9][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+results[,`:=`(rep="AGB",sub_rep="AGB_Feld_Cont",area="africa",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)]
+results$est<-as.character(results$est)
+results[1,est:="estimate"]
+results[2,est:="std.error"]
+results[3,est:="statistic"]
+results[4,est:="p.value"]
+results[5,est:="conf.low"]
+results[6,est:="conf.high"]
+end<-rbind(end,results[,.(rep, sub_rep, area,  Bio1, Bio12, Bio15, slope, sand, ph, org,Proportion,r_squared,RMSE,est),])
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+test<-as.data.table(as.numeric(summary(AGB_Feld_ContAf_F)$coefficients[,4]))
+test<-test[2:9]
+test[, `:=`(rep = "AGB" , sub_rep = "AGB_Feld_Cont", area="africa",  pvalue=V1,var_pred=c("Bio1","Bio12","Bio15","slope","sand","ph","org","Proportion"))][,V1:=NULL,]
+end2<-rbind(end2,test)
+rm(test)
+
+
+```
+
+##3.8. AGB_Feld_Re
+
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+##Africa
+
+#
+AGB_Feld_RegAf_F=lm(AGB_Feld_Reg~., data=bestMEM_AGB_Feld_RegAf)
+summary(AGB_Feld_RegAf_F)
+
+
+rse<-summary(AGB_Feld_RegAf_F)$sigma
+r_squared<-summary(AGB_Feld_RegAf_F)$r.squared
+mean<-data_Af_AGB_Reg[,mean(AGB_Feld_Reg),]
+results<-tidy(AGB_Feld_RegAf_F, conf.int = TRUE)
+
+setDT(results)
+results<-as.data.table(t(results[2:9][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+results[,`:=`(rep="AGB",sub_rep="AGB_Feld_Reg",area="africa",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)]
+results$est<-as.character(results$est)
+results[1,est:="estimate"]
+results[2,est:="std.error"]
+results[3,est:="statistic"]
+results[4,est:="p.value"]
+results[5,est:="conf.low"]
+results[6,est:="conf.high"]
+end<-rbind(end,results[,.(rep, sub_rep, area,  Bio1, Bio12, Bio15, slope, sand, ph, org,Proportion,r_squared,RMSE,est),])
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+test<-as.data.table(as.numeric(summary(AGB_Feld_RegAf_F)$coefficients[,4]))
+test<-test[2:9]
+test[, `:=`(rep = "AGB" , sub_rep = "AGB_Feld_Reg", area="africa",  pvalue=V1,var_pred=c("Bio1","Bio12","Bio15","slope","sand","ph","org","Proportion"))][,V1:=NULL,]
+end2<-rbind(end2,test)
+rm(test)
+```
+
+#Je sors le tableau 
+
+```{r}
+end[,source:="WC",]
+end2[,source:="WC",]
+
+fwrite(end,"end_stand_WC_af.csv")
+fwrite(end2,"end2_stand_WC_af.csv")
+
+
+```
+
+```{r}
+```
