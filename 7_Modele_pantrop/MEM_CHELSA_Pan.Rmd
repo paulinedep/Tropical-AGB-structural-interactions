@@ -1,0 +1,1279 @@
+---
+title: "Linear Multiple Regression + Spatial structure"
+author: "Pauline Depoortere"
+date: "02/12/2022"
+output: pdf_document
+---
+
+# Reproducibility note
+
+This R Markdown documents the full spatial analysis for the associated publication. **It is provided partly for information only.** Everything from here up to the `Export` section  -  the construction of the spatial weighting matrices (SWMs) and the selection of the Moran's Eigenvector Maps (MEMs)  -  relies on the exact plot coordinates (`LON`, `LAT`), which cannot be shared (see the Data Availability Statement). That part is therefore **not reproducible from the shared dataset** and is included for transparency only.
+
+The intermediate outputs of that step, the selected MEMs, are provided directly as the `bestMEM_*` tables. **From the `Importation of MEMs` section onward, the code is fully reproducible** using those provided tables.
+
+The input dataset (Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv) is still provided in this repository so that the variables and their metadata can be
+inspected.
+#----------------------------------------------------------------------------------------------------------------------------------
+
+#1. Datatable preparation 
+
+
+```{r include=FALSE}
+
+#rm(list=ls()) 
+
+# Set this to the folder on your own machine that contains the data file (Pantropical_dataset_..._SOIL.csv) and where outputs will be written
+#setwd("path/to/your/folder")
+
+#Libraries
+#library(data.table) #is used to import and manipulate tables
+#library(broom)
+#library(ggplot2)
+#library(dotwhisker) 
+#library(dplyr)
+
+#library(adespatial) 
+#library(spdep)
+#library(vegan)
+#library(textshape) 
+
+#library(janitor)
+
+#Set the seed (pseudo-random number generator), for exact reproducibility
+#set.seed(2023)
+
+#Load the data
+#data<-fread("Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+
+#Units : I have to multiply the Bio 15 variable by 100 (even if we are not sure for MERRACLIM)
+#data[,Bio15_m:=Bio15_m*100,]
+
+#summary(data)
+
+# Remove plots with elevation >= 1000 m
+
+#data<-data[!elevation.y>=1000]
+#data<-data[!is.na(Bio1_CHELSA)]
+```
+
+##1.1. Number of plots per continent
+
+```{r echo=FALSE}
+#data[,.(.N),by=Continent]
+```
+
+
+
+#2. Spatial structure 
+
+### Check that each site is only present once:
+
+```{r}
+#uniqueN(data, by="PLT_trois_bis")
+```
+
+### Quick visualisation of the sites in space:
+
+```{r}
+#data %>% 
+#  ggplot(aes(LON, LAT)) +
+#  geom_point() +
+#  coord_fixed() +
+#  theme_classic()
+```
+###!!! Choice of the data climate source
+
+```{r}
+#brut=data
+#data=data[,.(PLT_trois_bis,PLT_deux_bis,Ps,LAT,LON,Continent,Year,DBHqm,BA,SD,WD,WDba,AGB_Chave_eq7,AGB_Feld_Pan,AGB_Feld_Cont,AGB_Feld_Reg,sand,org,ph,slope,Bio1=Bio1_CHELSA,Bio12=Bio12_CHELSA,Bio15=Bio15_CHELSA)]
+
+
+#data[,DBHqm2:=DBHqm]
+#data[,BA2:=BA]
+#data[,SD2:=SD]
+#data[,WDba2:=WDba]
+
+#data[,WDba2:=as.vector(scale(WDba, center=TRUE, scale=TRUE)),]
+#data[,DBHqm2:=as.vector(scale(DBHqm, center=TRUE, scale=TRUE)),]
+#data[,SD2:=as.vector(scale(SD, center=TRUE, scale=TRUE)),]
+#data[,BA2:=as.vector(scale(BA, center=TRUE, scale=TRUE)),]
+#data[,AGB_Feld_Pan:=as.vector(scale(AGB_Feld_Pan, center=TRUE, scale=TRUE)),]
+#data[,AGB_Feld_Reg:=as.vector(scale(AGB_Feld_Reg, center=TRUE, scale=TRUE)),]
+#data[,AGB_Feld_Cont:=as.vector(scale(AGB_Feld_Cont, center=TRUE, scale=TRUE)),]
+
+
+##AGB
+
+
+##Pantropic
+#data_AGB_Cont<-data[!is.na(AGB_Feld_Cont)]
+
+##Pantropic
+#data_AGB_Reg<-data[!is.na(AGB_Feld_Reg)]
+
+
+```
+
+
+##!!! Standardization of all predictor and/or response variables
+
+
+```{r include=FALSE}
+#data[,Bio1:=as.vector(scale(Bio1, center=TRUE, scale=TRUE)),]
+#data[,Bio15:=as.vector(scale(Bio15, center=TRUE, scale=TRUE)),]
+#data[,Bio12:=as.vector(scale(Bio12, center=TRUE, scale=TRUE)),]
+
+#data[,sand:=as.vector(scale(sand, center=TRUE, scale=TRUE)),]
+#data[,org:=as.vector(scale(org, center=TRUE, scale=TRUE)),]
+#data[,ph:=as.vector(scale(ph, center=TRUE, scale=TRUE)),]
+
+#data[,slope:=as.vector(scale(slope, center=TRUE, scale=TRUE)),]
+
+#data[,WDba:=as.vector(scale(WDba, center=TRUE, scale=TRUE)),]
+#data[,DBHqm:=as.vector(scale(DBHqm, center=TRUE, scale=TRUE)),]
+#data[,SD:=as.vector(scale(SD, center=TRUE, scale=TRUE)),]
+#data[,BA:=as.vector(scale(BA, center=TRUE, scale=TRUE)),]
+
+##AGB Cont#############################################################################################
+
+#data_AGB_Cont[,Bio1:=as.vector(scale(Bio1, center=TRUE, scale=TRUE)),]
+#data_AGB_Cont[,Bio15:=as.vector(scale(Bio15, center=TRUE, scale=TRUE)),]
+#data_AGB_Cont[,Bio12:=as.vector(scale(Bio12, center=TRUE, scale=TRUE)),]
+
+#data_AGB_Cont[,sand:=as.vector(scale(sand, center=TRUE, scale=TRUE)),]
+#data_AGB_Cont[,org:=as.vector(scale(org, center=TRUE, scale=TRUE)),]
+#data_AGB_Cont[,ph:=as.vector(scale(ph, center=TRUE, scale=TRUE)),]
+
+#data_AGB_Cont[,slope:=as.vector(scale(slope, center=TRUE, scale=TRUE)),]
+
+#data_AGB_Cont[,WDba:=as.vector(scale(WDba, center=TRUE, scale=TRUE)),]
+#data_AGB_Cont[,DBHqm:=as.vector(scale(DBHqm, center=TRUE, scale=TRUE)),]
+#data_AGB_Cont[,SD:=as.vector(scale(SD, center=TRUE, scale=TRUE)),]
+#data_AGB_Cont[,BA:=as.vector(scale(BA, center=TRUE, scale=TRUE)),]
+
+##AGB Reg##############################################################################################
+#data_AGB_Reg[,Bio1:=as.vector(scale(Bio1, center=TRUE, scale=TRUE)),]
+#data_AGB_Reg[,Bio15:=as.vector(scale(Bio15, center=TRUE, scale=TRUE)),]
+#data_AGB_Reg[,Bio12:=as.vector(scale(Bio12, center=TRUE, scale=TRUE)),]
+
+#data_AGB_Reg[,sand:=as.vector(scale(sand, center=TRUE, scale=TRUE)),]
+#data_AGB_Reg[,org:=as.vector(scale(org, center=TRUE, scale=TRUE)),]
+#data_AGB_Reg[,ph:=as.vector(scale(ph, center=TRUE, scale=TRUE)),]
+
+#data_AGB_Reg[,slope:=as.vector(scale(slope, center=TRUE, scale=TRUE)),]
+
+#data_AGB_Reg[,WDba:=as.vector(scale(WDba, center=TRUE, scale=TRUE)),]
+#data_AGB_Reg[,DBHqm:=as.vector(scale(DBHqm, center=TRUE, scale=TRUE)),]
+#data_AGB_Reg[,SD:=as.vector(scale(SD, center=TRUE, scale=TRUE)),]
+#data_AGB_Reg[,BA:=as.vector(scale(BA, center=TRUE, scale=TRUE)),]
+
+```
+
+
+##2.1.Generation of a set of SWMs 
+
+... from which the optimisation of the selection of both the SWM and the subset of MEM variables within it will be carried out:
+
+
+We will test the two most contrasting graph-based criteria of connectivity as we have a irregular design (excluding the Delaunay triangulation to avoid edge effect issues), with a Gabriel graph and a minimum spanning tree. We will test these connectivity matrices without weighting the connexions and weighting them by the linear decreasing function of distance provided in the function (the further apart, the less two sites are connected or "exchange information").
+
+
+```{r}
+#source("listw.candidates_modif.R")
+#listw.candidates_modif<-function(coord, 
+#                               style = "B", 
+#                               nb = c("del", "gab", "rel", "mst", "pcnm", "dnear"),
+#                               d1 = 0, 
+#                               d2,
+#                               weights = c("binary", "flin", "fup", "fdown"),
+#                               y_fdown = 5, 
+#                               y_fup = 0.5,
+#                               nnmult = 10) {
+  
+#  nb <- match.arg(nb, several.ok = TRUE)
+#  weights <- match.arg(weights, several.ok = TRUE)
+  
+  
+#  if (length(nb) == 0) 
+#    stop("No connectivity matrix selected")
+#  if (length(weights) == 0) 
+#    stop("No weighting matrix selected")
+  
+#  if (anyNA(coord)) stop("NA entries in coord")
+  
+#  coord.mat <- as.matrix(coord)
+#  xy.d1 <- dist(coord.mat)  
+  
+#  res <- list()
+  ## Manage the case of pcnm separately (as it is not concerned by weights)
+#  if ("pcnm" %in% nb) {
+#    f <- function(D, t) { 1 - (D / (4 * t))^2 }           # PCNM criterion
+#    lowlim <- give.thresh(xy.d1)
+#    matB <- dnearneigh(x = coord.mat, d1 = 0, d2 = (1 + sqrt(.Machine$double.eps)) * lowlim) ## add espsilon to ensure that all sites have neighbors
+#    res[[1]] <- nb2listw(matB, style = style, 
+#                         glist = lapply(nbdists(matB, coord.mat),
+#                                        f, t = lowlim))
+#    names(res) <- "DBEM_PCNM"
+#    nb <- nb[-match("pcnm", nb)]
+#    if (length(nb) == 0)
+#      return(res)
+#  }
+  
+  
+#  .addweights <- function(nb.object, nb.dist, coord.mat, weights, style, Prefix,
+#                          y_fdown, y_fup) {
+    ## this utility function returns a list of listw objects created 
+    ## using a single nb.object and several weights
+#    res <- list()
+#    res.names <- c()
+#    f1 <- function(D, dmax)     { 1 - (D/dmax) }       # Linear function
+#    f2 <- function(D, dmax, y)  { 1 - (D/dmax)^y }     # Concave-down function
+#    f3 <- function(D, y)        { 1 / D^y }            # Concave-up function
+    
+#    if ("binary" %in% weights) {
+#      res <- c(res, list(nb2listw(nb.object, style = style)))
+#      res.names <- c(res.names, paste(Prefix, "Binary", sep = "_"))
+#    }
+    
+#    if ("flin" %in% weights) {
+#      max.del <- max(unlist(nbdists(nb.object, coord.mat)))
+      
+#      res <- c(res, list(nb2listw(nb.object, style = style, 
+#                                  glist = lapply(nb.dist, f1, dmax = max.del))))
+#      res.names <- c(res.names, paste(Prefix, "Linear", sep = "_"))
+#    }
+    
+#    if ("fdown" %in% weights) {
+#      max.del <- max(unlist(nbdists(nb.object, coord.mat)))
+#      for (i in y_fdown) {
+#        res <- c(res, list(nb2listw(nb.object, style = style, 
+#                                    glist = lapply(nbdists(nb.object, coord.mat), 
+#                                                   f2, y = i, dmax = max.del))))
+#        res.names <- c(res.names, paste(Prefix, "Down", i, sep = "_"))
+        
+#      }
+#    }
+    
+    
+#    if ("fup" %in% weights) {
+#      for (i in y_fup) {
+#        res <- c(res, list(nb2listw(nb.object, style = style, 
+#                                    glist = lapply(nbdists(nb.object, coord.mat), 
+#                                                   f3, y = i))))
+#        res.names <- c(res.names, paste(Prefix, "Up", i, sep = "_"))
+        
+#      }
+#    }
+    
+#    names(res) <- res.names
+#    return(res)
+#  }
+  
+  
+  
+#  if ("del" %in% nb) {
+#    nb.object <- tri2nb(coord.mat)
+#    nb.dist <- nbdists(nb.object, coord.mat)
+#    res <- c(res, .addweights(nb.object, nb.dist, coord.mat, weights, style, 
+#                              Prefix = "Delaunay", y_fdown, y_fup))
+#  }
+  
+  
+#  if ("gab" %in% nb) {
+#    nb.object <- graph2nb(gabrielneigh(coord.mat, nnmult = nnmult), sym = TRUE)
+#    nb.dist <- nbdists(nb.object, coord.mat)
+#    res <- c(res, .addweights(nb.object, nb.dist, coord.mat, weights, style, 
+#                              Prefix = "Gabriel", y_fdown, y_fup))
+#  }
+  
+  
+#  if ("rel" %in% nb) {
+#    nb.object <- graph2nb(relativeneigh(coord.mat, nnmult = nnmult), sym = TRUE)
+#    nb.dist <- nbdists(nb.object, coord.mat)
+#    res <- c(res, .addweights(nb.object, nb.dist, coord.mat, weights, style, 
+#                              Prefix = "Relative", y_fdown, y_fup))
+#  }
+  
+#  if ("mst" %in% nb) {
+#    nb.object <- mst.nb(xy.d1)
+#    nb.dist <- nbdists(nb.object, coord.mat)
+#    res <- c(res, .addweights(nb.object, nb.dist, coord.mat, weights, style, 
+#                              Prefix = "MST", y_fdown, y_fup))
+#  }
+  
+#  if ("dnear" %in% nb) {
+    # If "dnear" and no value specified for d2, then d2 is set to be the
+    # largest edge of the minimum spanning tree (minimum distance keeping all points connected)
+#    if (missing(d2))
+#      d2 <- (1 + sqrt(.Machine$double.eps)) * give.thresh(xy.d1)
+    
+#    nb.dnear <- lapply(d2, dnearneigh, x = coord.mat, d1 = d1)
+#    for (nb.i in 1:length(nb.dnear)) {
+#      nb.object <- nb.dnear[[nb.i]]
+#      nb.dist <- nbdists(nb.object, coord.mat)
+#      res <- c(res, .addweights(nb.object, nb.dist, coord.mat, weights, style, 
+#                                Prefix = paste("Dnear", round(d2[nb.i], 2), sep = ""), y_fdown, y_fup))
+      
+      
+#    }
+    
+#  }
+  
+#  return(res)
+  
+#}
+
+
+
+#listw.candidates<-listw.candidates_modif
+
+```
+
+
+
+```{r}
+
+#########################################################################################################################################################
+#Pantropic
+#########################################################################################################################################################
+
+##Table of spatial coordinates:
+#xy <- data %>% 
+#  column_to_rownames("PLT_trois_bis") %>% 
+#  dplyr::select(LON, LAT)
+
+##SWMs
+#swm_candidates <- listw.candidates(xy, nb = c('gab', 'mst'), weights = c('binary', 'flin'))
+#rm(xy)
+
+#########################################################################################################################################################
+##AGB_Cont
+#########################################################################################################################################################
+
+
+##Pantropic
+
+###Table of spatial coordinates:
+#xy_AGB_Cont <- data_AGB_Cont %>% 
+#  column_to_rownames("PLT_trois_bis") %>% 
+#  dplyr::select(LON, LAT)
+
+###SWMs
+#swm_candidates_AGB_Cont <- listw.candidates(xy_AGB_Cont, nb = c('gab', 'mst'), weights = c('binary', 'flin'))
+#rm(xy_AGB_Cont)
+
+
+#########################################################################################################################################################
+##AGB_Reg
+#########################################################################################################################################################
+
+
+##Pantropical
+
+###Table of spatial coordinates:
+#xy_AGB_Reg <- data_AGB_Reg %>% 
+#  column_to_rownames("PLT_trois_bis") %>% 
+#  dplyr::select(LON, LAT)
+
+###SWMs
+#swm_candidates_AGB_Reg <- listw.candidates(xy_AGB_Reg, nb = c('gab', 'mst'), weights = c('binary', 'flin'))
+#rm(xy_AGB_Reg)
+
+
+
+```
+
+
+
+##2.2. MEMs : Optimisation procedure (Bauman et al. 2018, Ecology)
+
+A SWM as well as a subset of MEM variables need to be selected at this stage.
+As discussed in Bauman et al. (2018, Ecography), the univariate / multivariate nature of the 
+response data as well as the type of question / objective should guide the choice of the type of 
+spatial eigenvector selection method.
+
+###a) MIR : Minimum number of components
+
+In the present case, we will use the MIR criterion (see Ecography paper), hence favoring the minimisation of the model residual spatial autocorrelation using the smallest subset of spatial predictors possible. 
+
+
+
+
+
+#####BA-DBHqm+SD : 
+
+```{r}
+
+
+###################################################################################################################
+##Pantropic
+
+# Définir le contraste global
+#options(contrasts = c("contr.sum", "contr.poly"))
+
+#data$Continent<-as.factor(data$Continent)
+#levels(data$Continent)
+#contrasts(data$Continent)
+#data_AGB_Cont$Continent<-as.factor(data_AGB_Cont$Continent)
+#contrasts(data_AGB_Cont$Continent)
+###MLR
+#BA=lm(BA2~(SD+DBHqm+Bio1+Bio12+Bio15+slope+sand+ph+org)*factor(Continent), data=data)
+#summary(BA)
+
+###Residuals
+#res_BA<-residuals(BA)
+
+###Get the best MEMs
+#select_BA<-listw.select(res_BA, swm_candidates, MEM.autocor = "positive", 
+#                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+#select_BA$best.id
+#select_BA$best$MEM.select
+#select_BA$candidates$N.var[select_BA$best.id]
+#select_BA$candidates
+
+#bestMEM_BA<-cbind(data %>%
+#                      dplyr::select(BA2,SD,DBHqm,Bio1,Bio12,Bio15,slope,sand,ph,org,Continent),
+#                      select_BA$best$MEM.select)
+#Clean the environment
+
+
+#rm(select_BA)
+
+#rm(res_BA)
+
+
+```
+
+#####DBHqm-SD: 
+
+```{r}
+
+
+###################################################################################################################
+###################################################################################################################
+###################################################################################################################
+##Pantropic
+# Définir le contraste global
+#options(contrasts = c("contr.sum", "contr.poly"))
+
+#data$Continent<-as.factor(data$Continent)
+#levels(data$Continent)
+
+###MLR
+#DBHqm=lm(DBHqm2~(SD+Bio1+Bio12+Bio15+slope+sand+ph+org)*factor(Continent), data=data)
+#summary(DBHqm)
+
+###Residuals
+#res_DBHqm<-residuals(DBHqm)
+
+###Get the best MEMs
+#select_DBHqm<-listw.select(res_DBHqm, swm_candidates, MEM.autocor = "positive", 
+#                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+#select_DBHqm$best.id
+#select_DBHqm$best$MEM.select
+#select_DBHqm$candidates$N.var[select_DBHqm$best.id]
+#select_DBHqm$candidates
+
+#bestMEM_DBHqm<-cbind(data %>%
+#                      dplyr::select(DBHqm2,SD,Bio1,Bio12,Bio15,slope,sand,ph,org,Continent),
+#                      select_DBHqm$best$MEM.select)
+#Clean the environment
+
+
+#rm(select_DBHqm)
+
+#rm(res_DBHqm)
+
+
+```
+
+#####SD-Env: 
+
+```{r}
+
+
+###################################################################################################################
+###################################################################################################################
+###################################################################################################################
+##Pantropic
+# Définir le contraste global
+#options(contrasts = c("contr.sum", "contr.poly"))
+
+#data$Continent<-as.factor(data$Continent)
+#levels(data$Continent)
+
+###MLR
+#SD=lm(SD2~(Bio1+Bio12+Bio15+slope+sand+ph+org)*factor(Continent), data=data)
+#summary(SD)
+
+###Residuals
+#res_SD<-residuals(SD)
+
+###Get the best MEMs
+#select_SD<-listw.select(res_SD, swm_candidates, MEM.autocor = "positive", 
+#                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+#select_SD$best.id
+#select_SD$best$MEM.select
+#select_SD$candidates$N.var[select_SD$best.id]
+#select_SD$candidates
+
+#bestMEM_SD<-cbind(data %>%
+#                      dplyr::select(SD2,Bio1,Bio12,Bio15,slope,sand,ph,org,Continent),
+#                      select_SD$best$MEM.select)
+#Clean the environment
+
+
+#rm(select_SD)
+
+#rm(res_SD)
+
+
+```
+
+#####Wdba-BA: 
+
+```{r}
+
+
+###################################################################################################################
+###################################################################################################################
+###################################################################################################################
+##Pantropic
+# Définir le contraste global
+#options(contrasts = c("contr.sum", "contr.poly"))
+
+#data$Continent<-as.factor(data$Continent)
+#levels(data$Continent)
+
+###MLR
+#WDba=lm(WDba2~(BA+Bio1+Bio12+Bio15+slope+sand+ph+org)*factor(Continent), data=data)
+#summary(WDba)
+
+###Residuals
+#res_WDba<-residuals(WDba)
+
+###Get the best MEMs
+#select_WDba<-listw.select(res_WDba, swm_candidates, MEM.autocor = "positive", 
+#                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+#select_WDba$best.id
+#select_WDba$best$MEM.select
+#select_WDba$candidates$N.var[select_WDba$best.id]
+#select_WDba$candidates
+
+#bestMEM_WDba<-cbind(data %>%
+#                      dplyr::select(WDba2,BA,Bio1,Bio12,Bio15,slope,sand,ph,org,Continent),
+#                      select_WDba$best$MEM.select)
+#Clean the environment
+
+
+#rm(select_WDba)
+
+#rm(res_WDba)
+
+
+```
+#####AGB Feld Pan-all : 
+
+```{r}
+
+###################################################################################################################
+##Pantropic
+# Définir le contraste global
+#options(contrasts = c("contr.sum", "contr.poly"))
+
+#data$Continent<-as.factor(data$Continent)
+#levels(data$Continent)
+
+###MLR
+#AGB_Feld_Pan=lm(AGB_Feld_Pan~(WDba+SD+BA+DBHqm+Bio1+Bio12+Bio15+slope+sand+ph+org)*factor(Continent), data=data)
+#summary(AGB_Feld_Pan)
+
+###Residuals
+#res_AGB_Feld_Pan<-residuals(AGB_Feld_Pan)
+
+###Get the best MEMs
+#select_AGB_Feld_Pan<-listw.select(res_AGB_Feld_Pan, swm_candidates, MEM.autocor = "positive", 
+#                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+#select_AGB_Feld_Pan$best.id
+#select_AGB_Feld_Pan$best$MEM.select
+#select_AGB_Feld_Pan$candidates$N.var[select_AGB_Feld_Pan$best.id]
+#select_AGB_Feld_Pan$candidates
+
+#bestMEM_AGB_Feld_Pan<-cbind(data %>%
+#                      dplyr::select(AGB_Feld_Pan,WDba,SD,BA,DBHqm,Bio1,Bio12,Bio15,slope,sand,ph,org,Continent),
+#                      select_AGB_Feld_Pan$best$MEM.select)
+#Clean the environment
+
+
+
+#rm(select_AGB_Feld_Pan)
+
+#rm(res_AGB_Feld_Pan)
+
+
+```
+####AGB_Feld_Reg-all:
+
+```{r}
+
+###################################################################################################################
+##Pantropic
+# Définir le contraste global
+#options(contrasts = c("contr.sum", "contr.poly"))
+
+#data$Continent<-as.factor(data$Continent)
+#levels(data$Continent)
+
+###MLR
+#AGB_Feld_Reg=lm(AGB_Feld_Reg~(WDba+SD+BA+DBHqm+Bio1+Bio12+Bio15+slope+sand+ph+org)*factor(Continent), data=data_AGB_Reg)
+#summary(AGB_Feld_Reg)
+
+###Residuals
+#res_AGB_Feld_Reg<-residuals(AGB_Feld_Reg)
+
+###Get the best MEMs
+#select_AGB_Feld_Reg<-listw.select(res_AGB_Feld_Reg, swm_candidates_AGB_Reg, MEM.autocor = "positive", 
+#                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+#select_AGB_Feld_Reg$best.id
+#select_AGB_Feld_Reg$best$MEM.select
+#select_AGB_Feld_Reg$candidates$N.var[select_AGB_Feld_Reg$best.id]
+#select_AGB_Feld_Reg$candidates
+
+#bestMEM_AGB_Feld_Reg<-cbind(data_AGB_Reg %>%
+#                      dplyr::select(AGB_Feld_Reg,WDba,SD,BA,DBHqm,Bio1,Bio12,Bio15,slope,sand,ph,org,Continent),
+#                      select_AGB_Feld_Reg$best$MEM.select)
+#Clean the environment
+
+
+
+#rm(select_AGB_Feld_Reg)
+
+
+#rm(res_AGB_Feld_Reg)
+
+
+```
+
+####AGB_Feld_Cont-all:
+
+```{r}
+
+
+###################################################################################################################
+###################################################################################################################
+###################################################################################################################
+##Pantropic
+# Définir le contraste global
+#options(contrasts = c("contr.sum", "contr.poly"))
+
+#data$Continent<-as.factor(data$Continent)
+#levels(data$Continent)
+
+###MLR
+#AGB_Feld_Cont=lm(AGB_Feld_Cont~(WDba+SD+BA+DBHqm+Bio1+Bio12+Bio15+slope+sand+ph+org)*factor(Continent), data=data_AGB_Cont)
+#summary(AGB_Feld_Cont)
+
+###Residuals
+#res_AGB_Feld_Cont<-residuals(AGB_Feld_Cont)
+
+###Get the best MEMs
+#select_AGB_Feld_Cont<-listw.select(res_AGB_Feld_Cont, swm_candidates_AGB_Cont, MEM.autocor = "positive", 
+#                         p.adjust = TRUE, method = "MIR", verbose = TRUE)
+
+#select_AGB_Feld_Cont$best.id
+#select_AGB_Feld_Cont$best$MEM.select
+#select_AGB_Feld_Cont$candidates$N.var[select_AGB_Feld_Cont$best.id]
+#select_AGB_Feld_Cont$candidates
+
+#bestMEM_AGB_Feld_Cont<-cbind(data_AGB_Cont %>%
+#                      dplyr::select(AGB_Feld_Cont,WDba,SD,BA,DBHqm,Bio1,Bio12,Bio15,slope,sand,ph,org,Continent),
+#                      select_AGB_Feld_Cont$best$MEM.select)
+#Clean the environment
+
+
+
+#rm(select_AGB_Feld_Cont)
+
+
+#rm(res_AGB_Feld_Cont)
+
+
+```
+
+##Export
+```{r include=FALSE}
+
+#fwrite(bestMEM_DBHqm,"bestMEM_DBHqm_CHELSA_pan.csv")
+
+#fwrite(bestMEM_BA,"bestMEM_BA_CHELSA_pan.csv")
+
+#fwrite(bestMEM_SD,"bestMEM_SD_CHELSA_pan.csv")
+
+#fwrite(bestMEM_WDba,"bestMEM_WDba_CHELSA_pan.csv")
+
+
+#fwrite(bestMEM_AGB_Feld_Pan,"bestMEM_AGB_Feld_Pan_CHELSA_pan.csv")
+
+
+#fwrite(bestMEM_AGB_Feld_Cont,"bestMEM_AGB_Feld_Cont_CHELSA_pan.csv")
+
+
+
+#fwrite(bestMEM_AGB_Feld_Reg,"bestMEM_AGB_Feld_Reg_CHELSA_pan.csv")
+
+
+
+```
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+#!!! HERE !!! Importation of MEMs
+
+
+###Datatable preparation 
+
+
+```{r include=FALSE}
+
+rm(list=ls()) 
+
+# Set this to the folder on your own machine that contains the data file 7_Modele_pantrop and where outputs will be written
+path <- "path/to/the/7_Modele_pantrop"
+setwd(path)
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+library(broom)
+library(ggplot2)
+#library(dotwhisker) 
+library(dplyr)
+
+library(adespatial) 
+library(spdep)
+library(vegan)
+library(textshape) 
+
+library(janitor)
+options(contrasts = c("contr.sum", "contr.poly"))
+#Set the seed (pseudo-random number generator), for exact reproducibility
+set.seed(2023)
+
+#Load the data
+data<-fread("Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+
+#Units : I have to multiply the Bio 15 variable by 100 (even if we are not sure for MERRACLIM)
+#data[,Bio15_m:=Bio15_m*100,]
+
+summary(data)
+
+# Remove plots with elevation >= 1000 m
+
+data<-data[!elevation.y>=1000]
+data<-data[!is.na(Bio1_CHELSA)]
+```
+
+###Choice of the data climate source
+
+```{r}
+brut=data
+data=data[,.(PLT_trois_bis,Ps,Continent,Year,DBHqm,BA,SD,WD,WDba,AGB_Chave_eq7,AGB_Feld_Pan,AGB_Feld_Cont,AGB_Feld_Reg,sand,org,ph,slope,Bio1=Bio1_CHELSA,Bio12=Bio12_CHELSA,Bio15=Bio15_CHELSA)]
+
+
+data[,DBHqm2:=DBHqm]
+data[,BA2:=BA]
+data[,SD2:=SD]
+data[,WDba2:=WDba]
+
+#data[,WDba2:=as.vector(scale(WDba, center=TRUE, scale=TRUE)),]
+#data[,DBHqm2:=as.vector(scale(DBHqm, center=TRUE, scale=TRUE)),]
+#data[,SD2:=as.vector(scale(SD, center=TRUE, scale=TRUE)),]
+#data[,BA2:=as.vector(scale(BA, center=TRUE, scale=TRUE)),]
+#data[,AGB_Feld_Pan:=as.vector(scale(AGB_Feld_Pan, center=TRUE, scale=TRUE)),]
+#data[,AGB_Feld_Reg:=as.vector(scale(AGB_Feld_Reg, center=TRUE, scale=TRUE)),]
+#data[,AGB_Feld_Cont:=as.vector(scale(AGB_Feld_Cont, center=TRUE, scale=TRUE)),]
+
+
+##AGB
+
+
+##Pantropic
+data_AGB_Cont<-data[!is.na(AGB_Feld_Cont)]
+
+##Pantropic
+data_AGB_Reg<-data[!is.na(AGB_Feld_Reg)]
+
+
+```
+
+
+###Standardization of all predictor and/or response variables
+
+
+```{r include=FALSE}
+data[,Bio1:=as.vector(scale(Bio1, center=TRUE, scale=TRUE)),]
+data[,Bio15:=as.vector(scale(Bio15, center=TRUE, scale=TRUE)),]
+data[,Bio12:=as.vector(scale(Bio12, center=TRUE, scale=TRUE)),]
+
+data[,sand:=as.vector(scale(sand, center=TRUE, scale=TRUE)),]
+data[,org:=as.vector(scale(org, center=TRUE, scale=TRUE)),]
+data[,ph:=as.vector(scale(ph, center=TRUE, scale=TRUE)),]
+
+data[,slope:=as.vector(scale(slope, center=TRUE, scale=TRUE)),]
+
+data[,WDba:=as.vector(scale(WDba, center=TRUE, scale=TRUE)),]
+data[,DBHqm:=as.vector(scale(DBHqm, center=TRUE, scale=TRUE)),]
+data[,SD:=as.vector(scale(SD, center=TRUE, scale=TRUE)),]
+data[,BA:=as.vector(scale(BA, center=TRUE, scale=TRUE)),]
+
+##AGB Cont#############################################################################################
+
+data_AGB_Cont[,Bio1:=as.vector(scale(Bio1, center=TRUE, scale=TRUE)),]
+data_AGB_Cont[,Bio15:=as.vector(scale(Bio15, center=TRUE, scale=TRUE)),]
+data_AGB_Cont[,Bio12:=as.vector(scale(Bio12, center=TRUE, scale=TRUE)),]
+
+data_AGB_Cont[,sand:=as.vector(scale(sand, center=TRUE, scale=TRUE)),]
+data_AGB_Cont[,org:=as.vector(scale(org, center=TRUE, scale=TRUE)),]
+data_AGB_Cont[,ph:=as.vector(scale(ph, center=TRUE, scale=TRUE)),]
+
+data_AGB_Cont[,slope:=as.vector(scale(slope, center=TRUE, scale=TRUE)),]
+
+data_AGB_Cont[,WDba:=as.vector(scale(WDba, center=TRUE, scale=TRUE)),]
+data_AGB_Cont[,DBHqm:=as.vector(scale(DBHqm, center=TRUE, scale=TRUE)),]
+data_AGB_Cont[,SD:=as.vector(scale(SD, center=TRUE, scale=TRUE)),]
+data_AGB_Cont[,BA:=as.vector(scale(BA, center=TRUE, scale=TRUE)),]
+
+##AGB Reg##############################################################################################
+data_AGB_Reg[,Bio1:=as.vector(scale(Bio1, center=TRUE, scale=TRUE)),]
+data_AGB_Reg[,Bio15:=as.vector(scale(Bio15, center=TRUE, scale=TRUE)),]
+data_AGB_Reg[,Bio12:=as.vector(scale(Bio12, center=TRUE, scale=TRUE)),]
+
+data_AGB_Reg[,sand:=as.vector(scale(sand, center=TRUE, scale=TRUE)),]
+data_AGB_Reg[,org:=as.vector(scale(org, center=TRUE, scale=TRUE)),]
+data_AGB_Reg[,ph:=as.vector(scale(ph, center=TRUE, scale=TRUE)),]
+
+data_AGB_Reg[,slope:=as.vector(scale(slope, center=TRUE, scale=TRUE)),]
+
+data_AGB_Reg[,WDba:=as.vector(scale(WDba, center=TRUE, scale=TRUE)),]
+data_AGB_Reg[,DBHqm:=as.vector(scale(DBHqm, center=TRUE, scale=TRUE)),]
+data_AGB_Reg[,SD:=as.vector(scale(SD, center=TRUE, scale=TRUE)),]
+data_AGB_Reg[,BA:=as.vector(scale(BA, center=TRUE, scale=TRUE)),]
+
+```
+###Importation of MEMs
+
+```{r include=FALSE}
+setwd(path)
+
+
+bestMEM_DBHqm<-fread("bestMEM_DBHqm_CHELSA_pan.csv")
+
+
+
+bestMEM_BA<-fread("bestMEM_BA_CHELSA_pan.csv")
+bestMEM_WDba<-fread("bestMEM_WDba_CHELSA_pan.csv")
+bestMEM_SD<-fread("bestMEM_SD_CHELSA_pan.csv")
+
+
+bestMEM_AGB_Feld_Pan<-fread("bestMEM_AGB_Feld_Pan_CHELSA_pan.csv")
+
+
+
+bestMEM_AGB_Feld_Cont<-fread("bestMEM_AGB_Feld_Cont_CHELSA_pan.csv")
+
+
+
+bestMEM_AGB_Feld_Reg<-fread("bestMEM_AGB_Feld_Reg_CHELSA_pan.csv")
+
+
+```
+
+#3. Multiple Linear Regression 
+
+##3.1. DBHqm
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+
+##Pantropic
+env_vars<-names(bestMEM_DBHqm)[2:9]#ici et best MEM
+MEM_vars <-names(bestMEM_DBHqm)[11:ncol(bestMEM_DBHqm)]#ici
+env_formula <- paste(env_vars, collapse = " + ")#ici
+full_formula <- paste("DBHqm2 ~(",   env_formula, ")*factor(Continent) +", paste(MEM_vars, collapse = " + "))
+model_formula <- as.formula(full_formula)
+DBHqm_F=lm(model_formula, data=bestMEM_DBHqm)#ici
+summary(DBHqm_F)
+
+rse<-summary(DBHqm_F)$sigma
+r_squared<-summary(DBHqm_F)$r.squared
+mean<-data[,mean(DBHqm2),]
+results<-tidy(DBHqm_F, conf.int = TRUE)
+
+setDT(results)
+results <- results[!grepl("^MEM", results$term), ]
+results <- results[!grepl("^SD", results$term), ]
+results<-as.data.table(t(results[1:nrow(results)][p.value>=0.05,estimate:=NA]))#ici
+
+results<-row_to_names(results,row_number=1)
+end_dbh<-rbind(results[,`:=`(rep="SC",sub_rep="DBH_qm",area="Pantropic",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)])
+end_dbh$est<-as.character(end_dbh$est)
+end_dbh[1,est:="estimate"]
+end_dbh[2,est:="std.error"]
+end_dbh[3,est:="statistic"]
+end_dbh[4,est:="p.value"]
+end_dbh[5,est:="conf.low"]
+end_dbh[6,est:="conf.high"]
+
+end_dbh <- end_dbh %>%
+  filter(est == "estimate")
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+```
+
+
+##3.2. BA
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+
+##Pantropic
+env_vars<-names(bestMEM_BA)[2:10]#ici
+MEM_vars <-names(bestMEM_BA)[12:ncol(bestMEM_BA)]#ici
+env_formula <- paste(env_vars, collapse = " + ")#ici
+full_formula <- paste("BA2 ~(",   env_formula, ")*factor(Continent) +", paste(MEM_vars, collapse = " + "))
+model_formula <- as.formula(full_formula)
+
+BA_F=lm(model_formula, data=bestMEM_BA)
+summary(BA_F)
+
+
+rse<-summary(BA_F)$sigma
+r_squared<-summary(BA_F)$r.squared
+mean<-data[,mean(BA2),]
+results<-tidy(BA_F, conf.int = TRUE)
+
+setDT(results)
+results <- results[!grepl("^MEM", results$term), ]
+results <- results[!grepl("^SD", results$term), ]
+results <- results[!grepl("^DBHqm", results$term), ]
+results<-as.data.table(t(results[1:nrow(results)][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+end_ba<-rbind(results[,`:=`(rep="SC",sub_rep="BA",area="Pantropic",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)])
+end_ba$est<-as.character(end_ba$est)
+end_ba[1,est:="estimate"]
+end_ba[2,est:="std.error"]
+end_ba[3,est:="statistic"]
+end_ba[4,est:="p.value"]
+end_ba[5,est:="conf.low"]
+end_ba[6,est:="conf.high"]
+
+end_ba <- end_ba %>%
+  filter(est == "estimate")
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+
+```
+
+
+
+##3.2. SD
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+
+##Pantropic
+env_vars<-names(bestMEM_SD)[2:8]#ici
+MEM_vars <-names(bestMEM_SD)[10:ncol(bestMEM_SD)]#ici
+env_formula <- paste(env_vars, collapse = " + ")#ici
+full_formula <- paste("SD2 ~(",   env_formula, ")*factor(Continent) +", paste(MEM_vars, collapse = " + "))
+model_formula <- as.formula(full_formula)
+
+SD_F=lm(model_formula, data=bestMEM_SD)
+summary(SD_F)
+
+
+rse<-summary(SD_F)$sigma
+r_squared<-summary(SD_F)$r.squared
+mean<-data[,mean(SD2),]
+results<-tidy(SD_F, conf.int = TRUE)
+
+setDT(results)
+results <- results[!grepl("^MEM", results$term), ]
+results<-as.data.table(t(results[1:nrow(results)][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+end_SD<-rbind(results[,`:=`(rep="SC",sub_rep="SD",area="Pantropic",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)])
+end_SD$est<-as.character(end_SD$est)
+end_SD[1,est:="estimate"]
+end_SD[2,est:="std.error"]
+end_SD[3,est:="statistic"]
+end_SD[4,est:="p.value"]
+end_SD[5,est:="conf.low"]
+end_SD[6,est:="conf.high"]
+
+end_SD <- end_SD %>%
+  filter(est == "estimate")
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+
+```
+
+
+##3.2. WDba
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+
+##Pantropic
+env_vars<-names(bestMEM_WDba)[2:9]#ici
+MEM_vars <-names(bestMEM_WDba)[11:ncol(bestMEM_WDba)]#ici
+env_formula <- paste(env_vars, collapse = " + ")#ici
+full_formula <- paste("WDba2 ~(",   env_formula, ")*factor(Continent) +", paste(MEM_vars, collapse = " + "))
+model_formula <- as.formula(full_formula)
+
+WDba_F=lm(model_formula, data=bestMEM_WDba)
+summary(WDba_F)
+
+
+rse<-summary(WDba_F)$sigma
+r_squared<-summary(WDba_F)$r.squared
+mean<-data[,mean(WDba2),]
+results<-tidy(WDba_F, conf.int = TRUE)
+
+setDT(results)
+results <- results[!grepl("^MEM", results$term), ]
+results <- results[!grepl("^BA", results$term), ]
+results<-as.data.table(t(results[1:nrow(results)][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+end_WDba<-rbind(results[,`:=`(rep="SC",sub_rep="WDba",area="Pantropic",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)])
+end_WDba$est<-as.character(end_WDba$est)
+end_WDba[1,est:="estimate"]
+end_WDba[2,est:="std.error"]
+end_WDba[3,est:="statistic"]
+end_WDba[4,est:="p.value"]
+end_WDba[5,est:="conf.low"]
+end_WDba[6,est:="conf.high"]
+
+end_WDba <- end_WDba %>%
+  filter(est == "estimate")
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+
+```
+
+##3.6. AGB_Feld_Pan-all
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+##Pantropic
+env_vars<-names(bestMEM_AGB_Feld_Pan)[2:12]#ici
+MEM_vars <-names(bestMEM_AGB_Feld_Pan)[14:ncol(bestMEM_AGB_Feld_Pan)]#ici
+env_formula <- paste(env_vars, collapse = " + ")#ici
+full_formula <- paste("AGB_Feld_Pan ~(",   env_formula, ")*factor(Continent) +", paste(MEM_vars, collapse = " + "))
+model_formula <- as.formula(full_formula)
+
+AGB_Feld_Pan_F=lm(model_formula, data=bestMEM_AGB_Feld_Pan)
+summary(AGB_Feld_Pan_F)
+
+
+rse<-summary(AGB_Feld_Pan_F)$sigma
+r_squared<-summary(AGB_Feld_Pan_F)$r.squared
+mean<-data[,mean(AGB_Feld_Pan),]
+results<-tidy(AGB_Feld_Pan_F, conf.int = TRUE)
+
+setDT(results)
+results <- results[!grepl("^MEM", results$term), ]
+results <- results[!grepl("^SD", results$term), ]
+results <- results[!grepl("^BA", results$term), ]
+results <- results[!grepl("^DBHqm", results$term), ]
+results <- results[!grepl("^WDba", results$term), ]
+results<-as.data.table(t(results[1:nrow(results)][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+end_agb<-rbind(results[,`:=`(rep="AGB",sub_rep="AGB_Feld_Pan",area="Pantropic",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)])
+end_agb$est<-as.character(end_agb$est)
+end_agb[1,est:="estimate"]
+end_agb[2,est:="std.error"]
+end_agb[3,est:="statistic"]
+end_agb[4,est:="p.value"]
+end_agb[5,est:="conf.low"]
+end_agb[6,est:="conf.high"]
+
+end_agb <- end_agb %>%
+  filter(est == "estimate")
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+```
+
+
+##3.7. AGB_Feld_Cont-all
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+
+##Pantropic
+env_vars<-names(bestMEM_AGB_Feld_Cont)[2:12]#ici
+MEM_vars <-names(bestMEM_AGB_Feld_Cont)[14:ncol(bestMEM_AGB_Feld_Cont)]#ici
+env_formula <- paste(env_vars, collapse = " + ")#ici
+full_formula <- paste("AGB_Feld_Cont ~(",   env_formula, ")*factor(Continent) +", paste(MEM_vars, collapse = " + "))
+model_formula <- as.formula(full_formula)
+
+AGB_Feld_Cont_F=lm(model_formula, data=bestMEM_AGB_Feld_Cont)
+summary(AGB_Feld_Cont_F)
+
+
+rse<-summary(AGB_Feld_Cont_F)$sigma
+r_squared<-summary(AGB_Feld_Cont_F)$r.squared
+mean<-data_AGB_Cont[,mean(AGB_Feld_Cont),]
+results<-tidy(AGB_Feld_Cont_F, conf.int = TRUE)
+
+setDT(results)
+results <- results[!grepl("^MEM", results$term), ]
+results <- results[!grepl("^SD", results$term), ]
+results <- results[!grepl("^BA", results$term), ]
+results <- results[!grepl("^DBHqm", results$term), ]
+results <- results[!grepl("^WDba", results$term), ]
+results<-as.data.table(t(results[1:nrow(results)][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+end_agb_cont<-rbind(results[,`:=`(rep="AGB",sub_rep="AGB_Feld_Cont",area="Pantropic",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)])
+end_agb_cont$est<-as.character(end_agb_cont$est)
+end_agb_cont[1,est:="estimate"]
+end_agb_cont[2,est:="std.error"]
+end_agb_cont[3,est:="statistic"]
+end_agb_cont[4,est:="p.value"]
+end_agb_cont[5,est:="conf.low"]
+end_agb_cont[6,est:="conf.high"]
+
+end_agb_cont <- end_agb_cont %>%
+  filter(est == "estimate")
+
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+
+
+
+```
+
+##3.9. AGB_Feld_Re-all
+
+
+###a) MLR Model with MEMs
+
+```{r include=FALSE}
+
+##Pantropic
+env_vars<-names(bestMEM_AGB_Feld_Reg)[2:12]#ici
+MEM_vars <-names(bestMEM_AGB_Feld_Reg)[14:ncol(bestMEM_AGB_Feld_Reg)]#ici
+env_formula <- paste(env_vars, collapse = " + ")#ici
+full_formula <- paste("AGB_Feld_Reg ~(",   env_formula, ")*factor(Continent) +", paste(MEM_vars, collapse = " + "))
+model_formula <- as.formula(full_formula)
+
+AGB_Feld_Reg_F=lm(model_formula, data=bestMEM_AGB_Feld_Reg)
+summary(AGB_Feld_Reg_F)
+
+
+
+rse<-summary(AGB_Feld_Reg_F)$sigma
+r_squared<-summary(AGB_Feld_Reg_F)$r.squared
+mean<-data_AGB_Reg[,mean(AGB_Feld_Reg),]
+results<-tidy(AGB_Feld_Reg_F, conf.int = TRUE)
+
+setDT(results)
+results <- results[!grepl("^MEM", results$term), ]
+results <- results[!grepl("^SD", results$term), ]
+results <- results[!grepl("^BA", results$term), ]
+results <- results[!grepl("^DBHqm", results$term), ]
+results <- results[!grepl("^WDba", results$term), ]
+results<-as.data.table(t(results[1:nrow(results)][p.value>=0.05,estimate:=NA]))
+
+results<-row_to_names(results,row_number=1)
+end_agb_reg<-rbind(results[,`:=`(rep="AGB",sub_rep="AGB_Feld_Reg",area="Pantropic",r_squared=r_squared,RMSE=(rse/mean)*100,est=NA)])
+end_agb_reg$est<-as.character(end_agb_reg$est)
+end_agb_reg[1,est:="estimate"]
+end_agb_reg[2,est:="std.error"]
+end_agb_reg[3,est:="statistic"]
+end_agb_reg[4,est:="p.value"]
+end_agb_reg[5,est:="conf.low"]
+end_agb_reg[6,est:="conf.high"]
+
+
+end_agb_reg <- end_agb_reg %>%
+  filter(est == "estimate")
+rm(rse)
+rm(mean)
+rm(r_squared)
+rm(results)
+
+
+```
+
+#rbind
+
+```{r}
+final<-rbind(end_dbh,end_ba,end_SD,end_WDba,end_agb)
+```
+
+# Export the final tables 
+
+```{r}
+setwd(path)
+final[,source:="CHELSA",]
+fwrite(final,"final_CHELSA_pan.csv")
+
+
+
+end_agb_reg[,source:="CHELSA",]
+fwrite(end_agb_reg,"end_agb_stand_CHELSA_pan_reg.csv")
+
+
+
+end_agb_cont[,source:="CHELSA",]
+fwrite(end_agb_cont,"end_agb_stand_CHELSA_pan_cont.csv")
+
+
+
+```
+
+```{r}
+```
