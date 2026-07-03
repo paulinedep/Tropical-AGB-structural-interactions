@@ -1,0 +1,117 @@
+---
+title: "ACP"
+output: html_document
+date: "2024-03-01"
+---
+
+#Importation + packages
+```{r}
+rm(list=ls()) 
+# ---------------------------------------------------------------------------
+# "base" = the folder that contains BOTH the model folders
+# (7_Modele_AGB_sans_montane, ...) AND this graph folder (8_Graph).
+# Put here the path to that folder on your machine: every path in the script
+# is then built automatically from it (base + subfolder + file).
+base<-"path/to/your/folder"
+
+
+setwd(file.path(base, "8_Graph"))
+
+##Packages
+library(data.table)
+library(ggplot2)
+library(plyr)#mu
+library(stringr)
+#library(ggpubr)
+#library(cowplot)
+library(multcomp)
+#library(stats)
+library(grid)
+library(gridExtra)
+#One legend for all
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+library(flextable)
+library(vegan)
+
+##Importation
+
+
+plot_var6<-fread("Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+choix<-fread("ACP-Choix_WC.csv")
+pion<-fread("pourc_pionnier_Af.csv")
+
+
+
+result <- merge(choix, pion[, .(plot, Proportion)], by.x = "PLT_trois_bis", by.y = "plot", all.x = TRUE)
+result[is.na(Proportion)&Continent=="Africa",uniqueN(PLT_trois_bis)]
+
+result<-result[Continent=="Africa"][!is.na(Proportion)]
+
+
+
+```
+
+##c) ACPs 
+
+
+
+###**ACP**: Ordination sur des variables quantitatives !
+
+Remoove NAs before !!!!! 
+
+```{r}
+pca<-vegan::rda(choix[!is.na(bio1),.(bio1,bio4,bio12,bio14,bio15,bio18,bulk,clay,org,ph,sand,water,slope)],scale=TRUE)
+summary(pca)
+
+```
+
+##d) Clustering
+
+
+                                    Ward’s Minimum Variance Clustering
+
+
+
+
+```{r}
+#"Ward.D2" method with the 6 main axes: 91.3%
+coord<-vegan::scores(pca,choices=c(1,2,3,4),display="sp")
+d1<-vegan::vegdist(coord, method="euclidean")
+
+cluster<-stats::hclust(d1,method="ward.D2")
+plot(cluster,main="Ward.D2 method with 6 dimensions",hang=-1)
+cluster.3gr_ward2_6<-cutree(cluster,7)
+cluster.3gr_ward2_6
+
+cluster.3gr.label_ward2_6<-paste(substr(rownames(coord),1,19),cluster.3gr_ward2_6)
+plot(cluster,main="Ward.D2 method with 6 dimensions",hang=-1,labels=cluster.3gr.label_ward2_6)
+rect.hclust(cluster,7)
+# 
+
+###Which k ?############################################################################################################################################
+
+# ##Méthode du Coude (Elbow Method) :
+# wss <- sapply(1:10, function(k) {
+#   cluster_k <- kmeans(coord, centers=k)
+#   sum(cluster_k$tot.withinss)
+# })
+# plot(1:10, wss, type="b", main="Méthode du coude", xlab="Nombre de clusters", ylab="WSS")
+# 
+# ##Gap statistic method :
+# ### Custom function for kmeans with an increased number of iterations
+# # # Compute the gap statistic for different numbers of clusters
+# library(cluster)
+# gap_stat <- clusGap(coord, FUN=kmeans, K.max=0, B=50)
+# 
+# # # Plot the gap statistic graph
+# plot(gap_stat, main="Méthode du Gap Statistic", xlab="Nombre de clusters", ylab="Gap Statistic")
+
+```
+
+```{r}
+```

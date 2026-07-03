@@ -1,0 +1,1099 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-03-08"
+---
+
+# Base path -- EDIT THIS ONCE, then run this chunk first
+```{r}
+
+# ---------------------------------------------------------------------------
+# "base" = the folder that contains BOTH the model folders
+# (7_Modele*, ...) AND this graph
+# folder (8_Graph). In other words, the folder that holds them all.
+# Put here the path to that folder on your machine: every path in the script
+# is then built automatically from it (base + subfolder + file).
+# Example: base <- "C:/Users/.../Work/MM"   # the folder that holds 7_Model*... and 8_Graph
+base <- "path/to/your/folder"
+```
+
+#BA-DBHqm+SD : all continent
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_TC.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_WC.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_ERA5.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_CHELSA.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_CRU.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_MODIS_CHIRPS.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_MODIS_IMERG.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+#Set to NA if 3 or fewer of the 7 sources have a value (N)
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_ba_dbh_sd.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_ba_dbh_sd.csv"))
+```
+
+#BA-DBHqm+SD : Africa
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_TC_af.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_WC_af.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_ERA5_af.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_CHELSA_af.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_CRU_af.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_MODIS_CHIRPS_af.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_ba_stand_MODIS_IMERG_af.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)],data[,.(rep,sub_rep,area,coef=Proportion,var="Proportion",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_ba_dbh_sd_af.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_ba_dbh_sd_af.csv"))
+```
+
+#DBHqm-SD : all continents
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_TC.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_WC.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_ERA5.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_CHELSA.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_CRU.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_MODIS_CHIRPS.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_MODIS_IMERG.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_dbh_sd.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_dbh_sd.csv"))
+```
+
+#DBHqm-SD : Africa
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_TC_af.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_WC_af.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_ERA5_af.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_CHELSA_af.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_CRU_af.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_MODIS_CHIRPS_af.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_dbh_stand_MODIS_IMERG_af.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)],data[,.(rep,sub_rep,area,coef=Proportion,var="Proportion",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_dbh_sd_af.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_dbh_sd_af.csv"))
+```
+
+#WDba-BA : all continents
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_TC.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_WC.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_ERA5.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_CHELSA.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_CRU.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_MODIS_CHIRPS.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_MODIS_IMERG.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=BA,var="BA",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_wdba_ba.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=BA,var="BA",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_wdba_ba.csv"))
+```
+
+#WDa-BA : Africa
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_TC_af.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_WC_af.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_ERA5_af.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_CHELSA_af.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_CRU_af.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_MODIS_CHIRPS_af.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_wdba_stand_MODIS_IMERG_af.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=BA,var="BA",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)],data[,.(rep,sub_rep,area,coef=Proportion,var="Proportion",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_wdba_ba_af.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=BA,var="BA",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_wdba_ba_af.csv"))
+```
+
+
+#AGB-all: all continents
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_TC.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_WC.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_ERA5.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_CHELSA.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_CRU.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_MODIS_CHIRPS.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_MODIS_IMERG.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=BA,var="BA",source,est)],data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)])
+
+## Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=BA,var="BA",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb.csv"))
+```
+
+#AGB-all: Africa
+
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_TC_af.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_WC_af.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_ERA5_af.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_CHELSA_af.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_CRU_af.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_MODIS_CHIRPS_af.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_stand_MODIS_IMERG_af.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=BA,var="BA",source,est)],data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)],data[,.(rep,sub_rep,area,coef=Proportion,var="Proportion",source,est)])
+
+## Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb_af.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=BA,var="BA",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb_af.csv"))
+```
+#AGB-SD: all continents
+
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_TC.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_WC.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_ERA5.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_CHELSA.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_CRU.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_MODIS_CHIRPS.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_MODIS_IMERG.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)])
+
+## Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb_sd.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb_sd.csv"))
+```
+
+#AGB-SD: Africa
+
+
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_TC_af.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_WC_af.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_ERA5_af.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_CHELSA_af.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_CRU_af.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_MODIS_CHIRPS_af.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_sd_stand_MODIS_IMERG_af.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)],data[,.(rep,sub_rep,area,coef=Proportion,var="Proportion",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb_sd_af.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb_sd_af.csv"))
+```
+
+#AGB-WDba: all continents
+
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_TC.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_WC.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_ERA5.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_CHELSA.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_CRU.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_MODIS_CHIRPS.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_MODIS_IMERG.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=WDba,var="WDba",source,est)],data[,.(rep,sub_rep,area,coef=BA,var="BA",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)])
+
+## Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb_wdba.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=WDba,var="WDba",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=BA,var="BA",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb_wdba.csv"))
+```
+
+#AGB-WDba: Africa
+
+
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_TC_af.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_WC_af.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_ERA5_af.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_CHELSA_af.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_CRU_af.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_MODIS_CHIRPS_af.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_wdba_stand_MODIS_IMERG_af.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=WDba,var="WDba",source,est)],data[,.(rep,sub_rep,area,coef=BA,var="BA",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)],data[,.(rep,sub_rep,area,coef=Proportion,var="Proportion",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb_wdba_af.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=WDba,var="WDba",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=BA,var="BA",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb_wdba_af.csv"))
+```
+
+
+#Proportion-env: Africa
+
+
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_prop_af_TC.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_prop_af_WC.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_prop_af_ERA5.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_prop_af_CHELSA.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_prop_af_CRU.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_prop_af_MODIS_CHIRPS.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_prop_af_MODIS_IMERG.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb_prop_af.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb_prop_af.csv"))
+```
+
+#AGB-DBHqm+SD: all continents
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_TC.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_WC.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_ERA5.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_CHELSA.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_CRU.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_MODIS_CHIRPS.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_MODIS_IMERG.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb_dbh_sd.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb_dbh_sd.csv"))
+```
+
+#AGB-DBHqm+SD: Africa
+
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_TC_af.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_WC_af.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_ERA5_af.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_CHELSA_af.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_CRU_af.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_MODIS_CHIRPS_af.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_dbh_sd_stand_MODIS_IMERG_af.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)],data[,.(rep,sub_rep,area,coef=Proportion,var="Proportion",source,est)])
+
+# Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb_dbh_sd_af.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb_dbh_sd_af.csv"))
+```
+
+#AGB-all: all continents
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_TC.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_WC.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_ERA5.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_CHELSA.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_CRU.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_MODIS_CHIRPS.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_MODIS_IMERG.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=BA,var="BA",source,est)],data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,est)],data[,.(rep,sub_rep,area,coef=WDba,var="WDba",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)])
+
+## Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb_all.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=BA,var="BA",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=WDba,var="WDba",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb_all.csv"))
+```
+
+#AGB-all: Africa
+
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_TC_af.csv"))
+data_WC<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_WC_af.csv"))
+data_ERA5<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_ERA5_af.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_CHELSA_af.csv"))
+data_CRU<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_CRU_af.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_MODIS_CHIRPS_af.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modele_AGB_sans_montane", "end_agb_all_stand_MODIS_IMERG_af.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=BA,var="BA",source,est)],data[,.(rep,sub_rep,area,coef=SD,var="SD",source,est)],data[,.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,est)],data[,.(rep,sub_rep,area,coef=WDba,var="WDba",source,est)],data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)],data[,.(rep,sub_rep,area,coef=Proportion,var="Proportion",source,est)])
+
+## Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_agb_all_af.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=BA,var="BA",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=SD,var="SD",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=DBHqm,var="DBHqm",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=WDba,var="WDba",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_agb_all_af.csv"))
+```
+#all-all : all continents
+
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_TC.csv"))
+data_WC<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_WC.csv"))
+data_ERA5<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_ERA5.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_CHELSA.csv"))
+data_CRU<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_CRU.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_MODIS_CHIRPS.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_MODIS_IMERG.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)])
+
+## Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_all_all.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_all_all.csv"))
+```
+
+#all-all : Africa
+
+##Data import
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+
+#Libraries
+library(data.table) #is used to import and manipulate tables
+
+
+data_TC<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_TC_af.csv"))
+data_WC<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_WC_af.csv"))
+data_ERA5<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_ERA5_af.csv"))
+data_CHELSA<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_CHELSA_af.csv"))
+data_CRU<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_CRU_af.csv"))
+data_MODIS_CHIRPS<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_MODIS_CHIRPS_af.csv"))
+data_MODIS_IMERG<-fread(file.path(base, "7_Modeles_bis_sans_montane", "end_stand_MODIS_IMERG_af.csv"))
+
+data<-rbind(data_TC,data_WC,data_ERA5,data_CHELSA,data_CRU,data_MODIS_CHIRPS,data_MODIS_IMERG)
+
+
+```
+
+##Filter coefficients by agreement among the climate sources 
+```{r }
+data_2<-rbind(data[,.(rep,sub_rep,area,coef=Bio1,var="bio1",source,est)],data[,.(rep,sub_rep,area,coef=Bio12,var="bio12",source,est)],data[,.(rep,sub_rep,area,coef=Bio15,var="bio15",source,est)],data[,.(rep,sub_rep,area,coef=slope,var="slope",source,est)],data[,.(rep,sub_rep,area,coef=sand,var="sand",source,est)],data[,.(rep,sub_rep,area,coef=ph,var="ph",source,est)],data[,.(rep,sub_rep,area,coef=org,var="org",source,est)],data[,.(rep,sub_rep,area,coef=Proportion,var="Proportion",source,est)])
+
+## Group coefficients by sub-replication, region and explanatory variable
+na_groups<-data_2[is.na(coef),,by=c("sub_rep", "area", "var","source")][,.(rep,sub_rep,area,var,source)]
+data_2[na_groups, on = .(rep, sub_rep, area, var,source), coef := NA_real_]
+data_3 <- data_2[, .(
+  mean_coef = mean(coef, na.rm = TRUE),
+  N = sum(!is.na(coef)),
+  has_positive = any(coef > 0, na.rm = TRUE),
+  has_negative = any(coef < 0, na.rm = TRUE)
+), by = .(sub_rep, area, var,est)]
+
+# Set to NA if the 7 sources disagree in sign
+data_3[, mean_coef := ifelse(est == "estimate" & has_positive & has_negative, NA, mean_coef)]
+
+data_4<-data_3[, .(sub_rep,area,var,mean_coef,N,has_positive,has_negative,est)][N>3,mean_coef2:=mean_coef]
+data_4<-data_4[N<=3,mean_coef2:=NA]
+
+fwrite(data_4,file.path(base, "8_Graph", "mean_coef_all_all_af.csv"))
+```
+
+##RMSE and R-squared: mean across sources 
+```{r}
+
+rmse<-rbind(data[est=="estimate",.(rep,sub_rep,area,coef=Bio1,var="bio1",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio12,var="bio12",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=Bio15,var="bio15",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=slope,var="slope",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=sand,var="sand",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=ph,var="ph",source,RMSE,r_squared,est)],data[est=="estimate",.(rep,sub_rep,area,coef=org,var="org",source,RMSE,r_squared,est)])
+
+rmse<-rmse[,.(rmse=unique(RMSE),r_squared=unique(r_squared)),by=c("sub_rep","area","source")]
+fwrite(rmse,file.path(base, "8_Graph", "rmse_mean_all_all_af.csv"))
+```
+
+```{r}
+```

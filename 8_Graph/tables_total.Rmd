@@ -1,0 +1,903 @@
+# Base path -- EDIT THIS ONCE, then run this chunk first
+```{r}
+
+# ---------------------------------------------------------------------------
+# "base" = the folder that contains BOTH the model folders
+# (7_Modele_AGB_sans_montane, ...) AND this graph folder (8_Graph).
+# Put here the path to that folder on your machine: every path in the script
+# is then built automatically from it (base + subfolder + file).
+base <- "path/to/your/folder"
+```
+
+
+#Importation
+```{r }
+rm(list = setdiff(ls(), "base")) 
+
+setwd(file.path(base, "8_Graph"))
+brut<-fread("Pantropical_dataset_2023plots_V2_N_55_1_SOIL.csv")
+brut<-brut[!elevation.y>=1000]
+pion<-fread("pourc_pionnier_Af.csv")
+#Libraries
+library(data.table) #is used to import and manipulate tables
+library(ggplot2)
+library(qgraph)
+library(igraph)
+
+library(ggraph)
+library(tidyverse)
+#Table: for all continents and all response variables, total effect of environment on each response variable (attributes and AGBs)
+mean_coef_all_all<-fread("mean_coef_all_all.csv")
+rmse_mean_all_all<-fread("rmse_mean_all_all.csv")
+rmse_mean_all_all<-rmse_mean_all_all[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais<-dcast(mean_coef_all_all,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Direct effect of environment on BA
+mean_coef_ba<-fread("mean_coef_ba_dbh_sd.csv")
+rmse_mean_ba<-fread("rmse_mean_ba_dbh_sd.csv")
+rmse_mean_ba<-rmse_mean_ba[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais2<-dcast(mean_coef_ba,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Direct effect of environment on DBHqm
+mean_coef_dbh<-fread("mean_coef_dbh_sd.csv")
+rmse_mean_dbh<-fread("rmse_mean_dbh_sd.csv")
+rmse_mean_dbh<-rmse_mean_dbh[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais3<-dcast(mean_coef_dbh,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Direct effect of environment on DBHqm
+mean_coef_wdba<-fread("mean_coef_wdba_ba.csv")
+rmse_mean_wdba<-fread("rmse_mean_wdba_ba.csv")
+rmse_mean_wdba<-rmse_mean_wdba[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais2bis<-dcast(mean_coef_wdba,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Direct effect of attributes on AGB
+mean_coef_agb<-fread("mean_coef_agb.csv")
+rmse_mean_agb<-fread("rmse_mean_agb.csv")
+rmse_mean_agb<-rmse_mean_agb[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais4<-dcast(mean_coef_agb,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Direct effect of attributes on AGB
+mean_coef_agb_all<-fread("mean_coef_agb_all.csv")
+rmse_mean_agb_all<-fread("rmse_mean_agb_all.csv")
+rmse_mean_agb_all<-rmse_mean_agb_all[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais4bis<-dcast(mean_coef_agb_all,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Total effect of attributes on AGB
+mean_coef_agb_sd<-fread("mean_coef_agb_sd.csv")
+rmse_mean_agb_sd<-fread("rmse_mean_agb_sd.csv")
+rmse_mean_agb_sd<-rmse_mean_agb_sd[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais5<-dcast(mean_coef_agb_sd,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_dbh_sd<-fread("mean_coef_agb_dbh_sd.csv")
+rmse_mean_agb_dbh_sd<-fread("rmse_mean_agb_dbh_sd.csv")
+rmse_mean_agb_dbh_sd<-rmse_mean_agb_dbh_sd[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais6<-dcast(mean_coef_agb_dbh_sd,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_wdba<-fread("mean_coef_agb_wdba.csv")
+rmse_mean_agb_wdba<-fread("rmse_mean_agb_wdba.csv")
+rmse_mean_agb_wdba<-rmse_mean_agb_wdba[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais7<-dcast(mean_coef_agb_wdba,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+##Africa with Proportion####################################################################################################################################################
+
+#Table: for all continents and all response variables, total effect of environment on each response variable (attributes and AGBs)
+mean_coef_all_all_af<-fread("mean_coef_all_all_af.csv")
+rmse_mean_all_all_af<-fread("rmse_mean_all_all_af.csv")
+rmse_mean_all_all_af<-rmse_mean_all_all_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais_af<-dcast(mean_coef_all_all_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Direct effect of environment on BA
+mean_coef_ba_af<-fread("mean_coef_ba_dbh_sd_af.csv")
+rmse_mean_ba_af<-fread("rmse_mean_ba_dbh_sd_af.csv")
+rmse_mean_ba_af<-rmse_mean_ba_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais2_af<-dcast(mean_coef_ba_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Direct effect of environment on DBHqm
+mean_coef_dbh_af<-fread("mean_coef_dbh_sd_af.csv")
+rmse_mean_dbh_af<-fread("rmse_mean_dbh_sd_af.csv")
+rmse_mean_dbh_af<-rmse_mean_dbh_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais3_af<-dcast(mean_coef_dbh_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Direct effect of environment on DBHqm
+mean_coef_wdba_af<-fread("mean_coef_wdba_ba_af.csv")
+rmse_mean_wdba_af<-fread("rmse_mean_wdba_ba_af.csv")
+rmse_mean_wdba_af<-rmse_mean_wdba_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais2bis_af<-dcast(mean_coef_wdba_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Direct effect of attributes on AGB
+mean_coef_agb_af<-fread("mean_coef_agb_af.csv")
+rmse_mean_agb_af<-fread("rmse_mean_agb_af.csv")
+rmse_mean_agb_af<-rmse_mean_agb_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais4_af<-dcast(mean_coef_agb_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+
+#Direct effect of attributes on AGB
+mean_coef_agb_all_af<-fread("mean_coef_agb_all_af.csv")
+rmse_mean_agb_all_af<-fread("rmse_mean_agb_all_af.csv")
+rmse_mean_agb_all_af<-rmse_mean_agb_all_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais4bis_af<-dcast(mean_coef_agb_all_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#Total effect of attributes on AGB
+mean_coef_agb_sd_af<-fread("mean_coef_agb_sd_af.csv")
+rmse_mean_agb_sd_af<-fread("rmse_mean_agb_sd_af.csv")
+rmse_mean_agb_sd_af<-rmse_mean_agb_sd_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais5_af<-dcast(mean_coef_agb_sd_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_dbh_sd_af<-fread("mean_coef_agb_dbh_sd_af.csv")
+rmse_mean_agb_dbh_sd_af<-fread("rmse_mean_agb_dbh_sd_af.csv")
+rmse_mean_agb_dbh_sd_af<-rmse_mean_agb_dbh_sd_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais6_af<-dcast(mean_coef_agb_dbh_sd_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_wdba_af<-fread("mean_coef_agb_wdba_af.csv")
+rmse_mean_agb_wdba_af<-fread("rmse_mean_agb_wdba_af.csv")
+rmse_mean_agb_wdba_af<-rmse_mean_agb_wdba_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais7_af<-dcast(mean_coef_agb_wdba_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+mean_coef_agb_prop_af<-fread("mean_coef_agb_prop_af.csv")
+rmse_mean_agb_prop_af<-fread("rmse_mean_agb_prop_af.csv")
+rmse_mean_agb_prop_af<-rmse_mean_agb_prop_af[,.(rmse=mean(rmse),rsquared=mean(r_squared)),by=c("sub_rep","area")]
+#still need to pivot so 'est' is in columns, using mean_coef2
+essais8_af<-dcast(mean_coef_agb_prop_af,sub_rep + area + var~est,value.var="mean_coef2")
+
+#############################################################################################################################################################################
+
+essais[,unique(area)]
+essais[area=="north America",area:="north_america"]
+essais[area=="Oceania",area:="oceania"]
+
+essais2[,unique(area)]
+essais2[area=="North America",area:="north_america"]
+essais2[area=="Oceania",area:="oceania"]
+
+essais2bis[,unique(area)]
+essais2bis[area=="North America",area:="north_america"]
+essais2bis[area=="Oceania",area:="oceania"]
+
+essais3[,unique(area)]
+essais3[area=="North America",area:="north_america"]
+essais3[area=="Oceania",area:="oceania"]
+
+
+essais4[,unique(area)]
+essais4[area=="North America",area:="north_america"]
+essais4[area=="Oceania",area:="oceania"]
+
+essais4bis[,unique(area)]
+essais4bis[area=="North America",area:="north_america"]
+essais4bis[area=="Oceania",area:="oceania"]
+
+
+essais5[,unique(area)]
+essais5[area=="North America",area:="north_america"]
+essais5[area=="Oceania",area:="oceania"]
+
+essais6[,unique(area)]
+essais6[area=="North America",area:="north_america"]
+essais6[area=="Oceania",area:="oceania"]
+
+essais7[,unique(area)]
+essais7[area=="North America",area:="north_america"]
+essais7[area=="Oceania",area:="oceania"]
+
+rmse_mean_agb_all[area=="North America",area:="north_america"]
+rmse_mean_agb_all_af[area=="North America",area:="north_america"]
+rmse_mean_agb[area=="North America",area:="north_america"]
+rmse_mean_agb_af[area=="North America",area:="north_america"]
+rmse_mean_agb_dbh_sd[area=="North America",area:="north_america"]
+rmse_mean_agb_dbh_sd_af[area=="North America",area:="north_america"]
+rmse_mean_agb_sd[area=="North America",area:="north_america"]
+rmse_mean_agb_sd_af[area=="North America",area:="north_america"]
+rmse_mean_all_all[area=="north America",area:="north_america"]
+rmse_mean_all_all_af[area=="North America",area:="north_america"]
+rmse_mean_ba[area=="North America",area:="north_america"]
+rmse_mean_ba_af[area=="North America",area:="north_america"]
+rmse_mean_dbh[area=="North America",area:="north_america"]
+rmse_mean_dbh_af[area=="North America",area:="north_america"]
+rmse_mean_wdba[area=="North America",area:="north_america"]
+rmse_mean_wdba_af[area=="North America",area:="north_america"]
+rmse_mean_agb_wdba[area=="North America",area:="north_america"]
+rmse_mean_agb_wdba_af[area=="North America",area:="north_america"]
+
+rmse_mean_agb_all[area=="Oceania",area:="oceania"]
+rmse_mean_agb_all_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb[area=="Oceania",area:="oceania"]
+rmse_mean_agb_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb_dbh_sd[area=="Oceania",area:="oceania"]
+rmse_mean_agb_dbh_sd_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb_sd[area=="Oceania",area:="oceania"]
+rmse_mean_agb_sd_af[area=="Oceania",area:="oceania"]
+rmse_mean_all_all[area=="Oceania",area:="oceania"]
+rmse_mean_all_all_af[area=="Oceania",area:="oceania"]
+rmse_mean_ba[area=="Oceania",area:="oceania"]
+rmse_mean_ba_af[area=="Oceania",area:="oceania"]
+rmse_mean_dbh[area=="Oceania",area:="oceania"]
+rmse_mean_dbh_af[area=="Oceania",area:="oceania"]
+rmse_mean_wdba[area=="Oceania",area:="oceania"]
+rmse_mean_wdba_af[area=="Oceania",area:="oceania"]
+rmse_mean_agb_wdba[area=="Oceania",area:="oceania"]
+rmse_mean_agb_wdba_af[area=="Oceania",area:="oceania"]
+
+rmse_mean_agb_all[,unique(area)]
+rmse_mean_agb_all_af[,unique(area)]
+rmse_mean_agb[,unique(area)]
+rmse_mean_agb_af[,unique(area)]
+rmse_mean_agb_dbh_sd[,unique(area)]
+rmse_mean_agb_dbh_sd_af[,unique(area)]
+rmse_mean_agb_sd[,unique(area)]
+rmse_mean_agb_sd_af[,unique(area)]
+rmse_mean_all_all[,unique(area)]
+rmse_mean_all_all_af[,unique(area)]
+rmse_mean_ba[,unique(area)]
+rmse_mean_ba_af[,unique(area)]
+rmse_mean_dbh[,unique(area)]
+rmse_mean_dbh_af[,unique(area)]
+rmse_mean_wdba[,unique(area)]
+rmse_mean_wdba_af[,unique(area)]
+rmse_mean_agb_wdba[,unique(area)]
+rmse_mean_agb_wdba_af[,unique(area)]
+
+essais_af[,unique(area)]
+essais2_af[,unique(area)]
+essais3_af[,unique(area)]
+essais2_af[,unique(area)]
+essais5_af[,unique(area)]
+essais6_af[,unique(area)]
+essais7_af[,unique(area)]
+essais2bis_af[,unique(area)]
+essais4bis_af[,unique(area)]
+
+essais[,unique(area)]
+essais2[,unique(area)]
+essais3[,unique(area)]
+essais4[,unique(area)]
+essais5[,unique(area)]
+essais6[,unique(area)]
+essais7[,unique(area)]
+essais2bis[,unique(area)]
+essais4bis[,unique(area)]
+```
+
+
+##Global coefficient tables
+```{r }
+
+essais[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais5[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais6[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais7[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+
+all_env_glob<-essais
+
+a<-essais6[var=="DBHqm"]
+b<-essais5[var=="SD"]
+c<-essais7[var=="WDba"]
+d<-essais4[var=="BA"]
+
+agb_att_glob<-rbind(a,b,c,d)
+
+agb_att_glob<-agb_att_glob[,.(from=var,to=sub_rep,coef=estimate,area)]
+all_env_glob<-all_env_glob[,.(from=var,to=sub_rep,coef=estimate,area)]
+
+#Oceania###################################################################################################################
+
+mean<-brut[Continent=="Oceania"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="Oceania"][!is.na(BA),sd(BA)]
+
+all_env_glob[to=="BA"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="BA"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[from=="BA"&area=="oceania",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Oceania"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="Oceania"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob[to=="DBHqm"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="DBHqm"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[from=="DBHqm"&area=="oceania",coef_brut:=coef/sd]
+
+mean-brut[Continent=="Oceania"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="Oceania"][!is.na(SD),sd(SD)]
+
+all_env_glob[to=="SD"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="SD"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[from=="SD"&area=="oceania",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Oceania"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="Oceania"][!is.na(WDba),sd(WDba)]
+
+all_env_glob[to=="WDba"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="WDba"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[from=="WDba"&area=="oceania",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+all_env_glob[to=="AGB_Feld_Pan"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Pan"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[to=="AGB_Feld_Pan"&area=="oceania",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob[to=="AGB_Feld_Cont"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Cont"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[to=="AGB_Feld_Cont"&area=="oceania",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="Oceania"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob[to=="AGB_Feld_Reg"&area=="oceania",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Reg"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+agb_att_glob[to=="AGB_Feld_Reg"&area=="oceania",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="oceania",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="Oceania"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio1"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio12"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio15"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania",sd(slope)]
+
+all_env_glob[from=="slope"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania",sd(sand)]
+
+all_env_glob[from=="sand"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania",sd(org)]
+
+all_env_glob[from=="org"&area=="oceania",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Oceania",sd(ph)]
+
+all_env_glob[from=="ph"&area=="oceania",coef_brut:=coef/sd]
+
+
+#North America###################################################################################################################
+
+mean<-brut[Continent=="North America"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="North America"][!is.na(BA),sd(BA)]
+
+all_env_glob[to=="BA"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="BA"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="BA"&area=="north_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="North America"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="North America"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob[to=="DBHqm"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="DBHqm"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="DBHqm"&area=="north_america",coef_brut:=coef/sd]
+
+mean-brut[Continent=="North America"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="North America"][!is.na(SD),sd(SD)]
+
+all_env_glob[to=="SD"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="SD"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="SD"&area=="north_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="North America"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="North America"][!is.na(WDba),sd(WDba)]
+
+all_env_glob[to=="WDba"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="WDba"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="WDba"&area=="north_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="North America"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="North America"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+all_env_glob[to=="AGB_Feld_Pan"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Pan"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="north_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="north_america",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="North America"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="North America"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob[to=="AGB_Feld_Cont"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Cont"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="north_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="north_america",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="North America"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="North America"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob[to=="AGB_Feld_Reg"&area=="north_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Reg"&area=="north_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="north_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="north_america",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="North America"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio1"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio12"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio15"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America",sd(slope)]
+all_env_glob[from=="slope"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America",sd(sand)]
+all_env_glob[from=="sand"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America",sd(org)]
+all_env_glob[from=="org"&area=="north_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="North America",sd(ph)]
+all_env_glob[from=="ph"&area=="north_america",coef_brut:=coef/sd]
+
+
+
+#South America###################################################################################################################
+
+mean<-brut[Continent=="South America"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="South America"][!is.na(BA),sd(BA)]
+
+all_env_glob[to=="BA"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="BA"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="BA"&area=="south_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="South America"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="South America"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob[to=="DBHqm"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="DBHqm"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="DBHqm"&area=="south_america",coef_brut:=coef/sd]
+
+mean-brut[Continent=="South America"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="South America"][!is.na(SD),sd(SD)]
+
+all_env_glob[to=="SD"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="SD"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="SD"&area=="south_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="South America"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="South America"][!is.na(WDba),sd(WDba)]
+
+all_env_glob[to=="WDba"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="WDba"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="WDba"&area=="south_america",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="South America"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="South America"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+all_env_glob[to=="AGB_Feld_Pan"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Pan"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="south_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="south_america",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="South America"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="South America"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob[to=="AGB_Feld_Cont"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Cont"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="south_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="south_america",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="South America"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="South America"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob[to=="AGB_Feld_Reg"&area=="south_america",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Reg"&area=="south_america",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="south_america",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="south_america",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="South America"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio1"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio12"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio15"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America",sd(slope)]
+all_env_glob[from=="slope"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America",sd(sand)]
+all_env_glob[from=="sand"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America",sd(org)]
+all_env_glob[from=="org"&area=="south_america",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="South America",sd(ph)]
+all_env_glob[from=="ph"&area=="south_america",coef_brut:=coef/sd]
+
+
+
+#Asia###################################################################################################################
+
+mean<-brut[Continent=="Eurasia"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="Eurasia"][!is.na(BA),sd(BA)]
+
+all_env_glob[to=="BA"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="BA"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="BA"&area=="asia",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Eurasia"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="Eurasia"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob[to=="DBHqm"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="DBHqm"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="DBHqm"&area=="asia",coef_brut:=coef/sd]
+
+mean-brut[Continent=="Eurasia"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="Eurasia"][!is.na(SD),sd(SD)]
+
+all_env_glob[to=="SD"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="SD"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="SD"&area=="asia",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Eurasia"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="Eurasia"][!is.na(WDba),sd(WDba)]
+
+all_env_glob[to=="WDba"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="WDba"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="WDba"&area=="asia",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+all_env_glob[to=="AGB_Feld_Pan"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Pan"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="asia",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="asia",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob[to=="AGB_Feld_Cont"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Cont"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="asia",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="asia",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="Eurasia"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob[to=="AGB_Feld_Reg"&area=="asia",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Reg"&area=="asia",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="asia",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="asia",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="Eurasia"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio1"&area=="asia",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Eurasia"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio12"&area=="asia",coef_brut:=coef/sd]
+sd<-brut[Continent=="Eurasia"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio15"&area=="asia",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Eurasia",sd(slope)]
+all_env_glob[from=="slope"&area=="asia",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Eurasia",sd(sand)]
+all_env_glob[from=="sand"&area=="asia",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Eurasia",sd(org)]
+all_env_glob[from=="org"&area=="asia",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Eurasia",sd(ph)]
+all_env_glob[from=="ph"&area=="asia",coef_brut:=coef/sd]
+
+
+
+#Africa###################################################################################################################
+
+mean<-brut[Continent=="Africa"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="Africa"][!is.na(BA),sd(BA)]
+
+all_env_glob[to=="BA"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="BA"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="BA"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="Africa"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob[to=="DBHqm"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="DBHqm"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="DBHqm"&area=="africa",coef_brut:=coef/sd]
+
+mean-brut[Continent=="Africa"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="Africa"][!is.na(SD),sd(SD)]
+
+all_env_glob[to=="SD"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="SD"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="SD"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="Africa"][!is.na(WDba),sd(WDba)]
+
+all_env_glob[to=="WDba"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="WDba"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[from=="WDba"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+all_env_glob[to=="AGB_Feld_Pan"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Pan"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Pan"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob[to=="AGB_Feld_Cont"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Cont"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Cont"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob[to=="AGB_Feld_Reg"&area=="africa",coef_sd:=coef/sd]
+all_env_glob[to=="AGB_Feld_Reg"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob[to=="AGB_Feld_Reg"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="Africa"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio1"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio12"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob[from=="bio15"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(slope)]
+all_env_glob[from=="slope"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(sand)]
+all_env_glob[from=="sand"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(org)]
+all_env_glob[from=="org"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(ph)]
+all_env_glob[from=="ph"&area=="africa",coef_brut:=coef/sd]
+
+
+
+#Africa (controlled)###################################################################################################################
+
+
+result <- merge(brut, pion[, .(plot, Proportion)], by.x = "PLT_trois_bis", by.y = "plot", all.x = TRUE)
+result[is.na(Proportion)&Continent=="Africa",uniqueN(PLT_trois_bis)]#28 plots ont pas
+
+result<-result[Continent=="Africa"][!is.na(Proportion)]
+#result<-result[!elevation.y>=1000]
+
+essais_af[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais5_af[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais6_af[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+essais7_af[sub_rep=="DBH_qm",sub_rep:="DBHqm"]
+
+all_env_glob_af<-essais_af
+
+a<-essais6_af[var=="DBHqm"]
+b<-essais5_af[var=="SD"]
+c<-essais7_af[var=="WDba"]
+d<-essais4_af[var=="BA"]
+
+agb_att_glob_af<-rbind(a,b,c,d)
+
+agb_att_glob_af<-agb_att_glob_af[,.(from=var,to=sub_rep,coef=estimate,area)]
+all_env_glob_af<-all_env_glob_af[,.(from=var,to=sub_rep,coef=estimate,area)]
+
+
+###################################################################################################################
+mean<-brut[Continent=="Africa"][!is.na(BA),mean(BA)]
+sd<-brut[Continent=="Africa"][!is.na(BA),sd(BA)]
+
+all_env_glob_af[to=="BA"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="BA"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[from=="BA"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(DBHqm),mean(DBHqm)]
+sd<-brut[Continent=="Africa"][!is.na(DBHqm),sd(DBHqm)]
+
+all_env_glob_af[to=="DBHqm"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="DBHqm"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[from=="DBHqm"&area=="africa",coef_brut:=coef/sd]
+
+mean-brut[Continent=="Africa"][!is.na(SD),mean(SD)]
+sd<-brut[Continent=="Africa"][!is.na(SD),sd(SD)]
+
+all_env_glob_af[to=="SD"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="SD"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[from=="SD"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(WDba),mean(WDba)]
+sd<-brut[Continent=="Africa"][!is.na(WDba),sd(WDba)]
+
+all_env_glob_af[to=="WDba"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="WDba"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[from=="WDba"&area=="africa",coef_brut:=coef/sd]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),mean(AGB_Feld_Pan)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Pan),sd(AGB_Feld_Pan)]
+
+
+mean_prop<-result[Continent=="Africa"][!is.na(Proportion),mean(Proportion)]
+sd_prop<-result[Continent=="Africa"][!is.na(Proportion),sd(Proportion)]
+
+
+all_env_glob_af[to=="AGB_Feld_Pan"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="AGB_Feld_Pan"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[to=="AGB_Feld_Pan"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob_af[to=="AGB_Feld_Pan"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),mean(AGB_Feld_Cont)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Cont),sd(AGB_Feld_Cont)]
+
+all_env_glob_af[to=="AGB_Feld_Cont"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="AGB_Feld_Cont"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[to=="AGB_Feld_Cont"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob_af[to=="AGB_Feld_Cont"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+mean<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),mean(AGB_Feld_Reg)]
+sd<-brut[Continent=="Africa"][!is.na(AGB_Feld_Reg),sd(AGB_Feld_Reg)]
+
+all_env_glob_af[to=="AGB_Feld_Reg"&area=="africa",coef_sd:=coef/sd]
+all_env_glob_af[to=="AGB_Feld_Reg"&area=="africa",coef_pourc:=(coef/mean)*100]
+agb_att_glob_af[to=="AGB_Feld_Reg"&area=="africa",coef_sd:=coef/sd]
+agb_att_glob_af[to=="AGB_Feld_Reg"&area=="africa",coef_pourc:=(coef/mean)*100]
+
+
+
+sd<-brut[Continent=="Africa"][,.(Bio1_WC,Bio1_CHELSA,Bio1_CRU,Bio1_ERA5,Bio1_TC,Bio1_MODIS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob_af[from=="bio1"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa"][,.(Bio12_WC,Bio12_CHELSA,Bio12_CRU,Bio12_ERA5,Bio12_TC,Bio12_IMERG,Bio12_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob_af[from=="bio12"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa"][,.(Bio15_WC,Bio15_CHELSA,Bio15_CRU,Bio15_ERA5,Bio15_TC,Bio15_IMERG,Bio15_CHIRPS)]
+sd[, row_mean := rowMeans(.SD, na.rm = TRUE)]
+sd<-sd[,sd(row_mean)]
+
+all_env_glob_af[from=="bio15"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(slope)]
+all_env_glob_af[from=="slope"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(sand)]
+all_env_glob_af[from=="sand"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(org)]
+all_env_glob_af[from=="org"&area=="africa",coef_brut:=coef/sd]
+
+sd<-brut[Continent=="Africa",sd(ph)]
+all_env_glob_af[from=="ph"&area=="africa",coef_brut:=coef/sd]
+
+
+sd<-result[Continent=="Africa",sd(Proportion)]
+all_env_glob_af[from=="Proportion"&area=="africa",coef_brut:=coef/sd]
+
+
+```
+
+#Export global coefficient table
+```{r }
+
+agb_att_glob<-rbind(agb_att_glob,agb_att_glob_af[,area:="africa_cont"])
+#fwrite(agb_att_glob[,.(from,to,area,coef_brut,coef,coef_sd,coef_pourc)],"agb_att_glob.csv")
+
+#keep only AGB!!
+all_env_glob<-rbind(all_env_glob,all_env_glob_af[,area:="africa_cont"])
+all_env_glob_bis<-all_env_glob[!to=="BA"&!to=="WDba"&!to=="DBHqm"&!to=="SD"]
+#fwrite(all_env_glob[,.(from,to,area,coef_brut,coef,coef_sd,coef_pourc)],"all_env_glob.csv")
+
+```
+
+
+#Global RMSE table: attribute on AGB and environment on AGB
+```{r }
+
+#for environment on AGB (and on attributes)
+rmse_mean_all_all
+rmse_mean_all_all_af
+rmse_mean_all_all<-rbind(rmse_mean_all_all,rmse_mean_all_all_af[,area:="africa_cont"])
+rmse_mean_all_all_bis<-rmse_mean_all_all[!sub_rep=="BA"&!sub_rep=="WDba"&!sub_rep=="DBH_qm"&!sub_rep=="SD"]
+#fwrite(rmse_mean_all_all,"rmse_mean_all_all.csv")
+```
+
+```{r }
+```
