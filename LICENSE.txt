@@ -1,0 +1,35 @@
+
+Copyright (c) 2026 Depoortere et al.
+
+All rights reserved.
+
+This repository contains code and associated materials developed for the 
+study "Region-specific forest structure pathways reveal climate effects on old-growth tropical forest biomass" (in preparation). 
+
+DATA AVAILABILITY
+Raw tree-by-tree data are not included in this repository due to confidentiality agreements with data 
+contributors (ForestPlots.net, GFBI). Requests for tree-by-tree data 
+should be directed to the relevant data networks. 
+See the Data Availability statement. 
+
+RESTRICTIONS
+This code and the accompanying plot-level summary dataset are provided 
+solely to enable transparency and reproducibility of the published 
+analyses. Reuse, reproduction, modification, or redistribution of the 
+code or data, in whole or in part, and any reanalysis of the data for 
+the purpose of independent publication, is not permitted without prior 
+written permission from the corresponding author.
+
+HOW TO CITE
+If you use this code, please cite the associated manuscript:
+
+Depoortere, P. et al. (in preparation). Region-specific forest structure 
+pathways reveal climate effects on old-growth tropical forest biomass.
+
+A citable Zenodo DOI for this repository will be added upon publication.
+
+
+CONTACT
+If you encounter issues reproducing the analyses using this code, or 
+have questions about collaboration, please contact the corresponding 
+author: Pauline Depoortere (depoort.p@gmail.com)
